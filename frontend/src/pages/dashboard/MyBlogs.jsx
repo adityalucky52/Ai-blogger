@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,72 +25,21 @@ import {
   Clock,
 } from "lucide-react";
 
-// Mock data
-const mockBlogs = [
-  {
-    id: 1,
-    title: "The Future of AI in Content Creation: A Complete Guide",
-    excerpt:
-      "Discover how artificial intelligence is revolutionizing content creation...",
-    status: "published",
-    category: "Technology",
-    views: 2340,
-    publishedAt: "2026-02-01",
-    image:
-      "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=300&h=200&fit=crop",
-  },
-  {
-    id: 2,
-    title: "Building Scalable Web Applications with React",
-    excerpt:
-      "Learn the best practices for building scalable React applications...",
-    status: "published",
-    category: "Development",
-    views: 1820,
-    publishedAt: "2026-01-28",
-    image:
-      "https://images.unsplash.com/photo-1461749280684-dccba630e2f6?w=300&h=200&fit=crop",
-  },
-  {
-    id: 3,
-    title: "10 Tips for Better Technical Writing",
-    excerpt: "Improve your technical writing skills with these proven tips...",
-    status: "draft",
-    category: "Writing",
-    views: 0,
-    publishedAt: null,
-    image:
-      "https://images.unsplash.com/photo-1455390582262-044cdead277a?w=300&h=200&fit=crop",
-  },
-  {
-    id: 4,
-    title: "Introduction to Machine Learning Basics",
-    excerpt: "A beginner-friendly guide to understanding machine learning...",
-    status: "published",
-    category: "Technology",
-    views: 3200,
-    publishedAt: "2026-01-15",
-    image:
-      "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=300&h=200&fit=crop",
-  },
-  {
-    id: 5,
-    title: "Remote Work Productivity Tips",
-    excerpt: "Maximize your productivity while working from home...",
-    status: "draft",
-    category: "Lifestyle",
-    views: 0,
-    publishedAt: null,
-    image:
-      "https://images.unsplash.com/photo-1593642632559-0c6d3fc62b89?w=300&h=200&fit=crop",
-  },
-];
+import useBlogStore from "../../store/blogStore";
+import { useEffect } from "react";
+import { stripHtmlTags } from "../../utils/textUtils";
 
 export default function MyBlogs() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const { myBlogs, fetchMyBlogs, deleteBlog, isLoading } = useBlogStore();
+  const navigate = useNavigate();
 
-  const filteredBlogs = mockBlogs.filter((blog) => {
+  useEffect(() => {
+    fetchMyBlogs();
+  }, [fetchMyBlogs]);
+
+  const filteredBlogs = myBlogs.filter((blog) => {
     const matchesSearch = blog.title
       .toLowerCase()
       .includes(searchQuery.toLowerCase());
@@ -100,10 +49,10 @@ export default function MyBlogs() {
   });
 
   const stats = {
-    total: mockBlogs.length,
-    published: mockBlogs.filter((b) => b.status === "published").length,
-    drafts: mockBlogs.filter((b) => b.status === "draft").length,
-    views: mockBlogs.reduce((acc, b) => acc + b.views, 0),
+    total: myBlogs.length,
+    published: myBlogs.filter((b) => b.status === "published").length,
+    drafts: myBlogs.filter((b) => b.status === "draft").length,
+    views: myBlogs.reduce((acc, b) => acc + (b.views || 0), 0),
   };
 
   return (
@@ -118,7 +67,7 @@ export default function MyBlogs() {
         </div>
         <Button
           asChild
-          className="bg-gradient-to-r from-violet-600 to-indigo-600"
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Link to="/dashboard/blogs/new">
             <Plus className="h-4 w-4 mr-2" />
@@ -229,11 +178,14 @@ export default function MyBlogs() {
         ) : (
           filteredBlogs.map((blog) => (
             <Card
-              key={blog.id}
+              key={blog._id}
               className="border-0 shadow-sm hover:shadow-md transition-shadow"
             >
               <CardContent className="p-0">
-                <div className="flex flex-col md:flex-row">
+                <div
+                  className="flex flex-col md:flex-row cursor-pointer"
+                  onClick={() => navigate(`/dashboard/blogs/edit/${blog._id}`)}
+                >
                   {/* Image */}
                   <div className="md:w-48 h-32 md:h-auto">
                     <img
@@ -262,10 +214,12 @@ export default function MyBlogs() {
                           >
                             {blog.status}
                           </Badge>
-                          <Badge variant="outline">{blog.category}</Badge>
+                          <Badge variant="outline">
+                            {blog.topic || blog.category}
+                          </Badge>
                         </div>
                         <h3 className="text-lg font-semibold mb-1 line-clamp-1">
-                          {blog.title}
+                          {stripHtmlTags(blog.title)}
                         </h3>
                         <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
                           {blog.excerpt}
@@ -273,11 +227,13 @@ export default function MyBlogs() {
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Eye className="h-4 w-4" />
-                            {blog.views.toLocaleString()} views
+                            {(blog.views || 0).toLocaleString()} views
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="h-4 w-4" />
-                            {blog.publishedAt || "Not published"}
+                            {blog.createdAt
+                              ? new Date(blog.createdAt).toLocaleDateString()
+                              : "Not published"}
                           </span>
                         </div>
                       </div>
@@ -292,7 +248,7 @@ export default function MyBlogs() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
                             <Link
-                              to={`/dashboard/blogs/edit/${blog.id}`}
+                              to={`/dashboard/blogs/edit/${blog._id}`}
                               className="flex items-center"
                             >
                               <Edit className="h-4 w-4 mr-2" />
@@ -302,7 +258,7 @@ export default function MyBlogs() {
                           {blog.status === "published" && (
                             <DropdownMenuItem asChild>
                               <Link
-                                to={`/blog/${blog.id}`}
+                                to={`/blog/${blog.slug}`} // Use slug for public view
                                 className="flex items-center"
                               >
                                 <ExternalLink className="h-4 w-4 mr-2" />
@@ -311,7 +267,19 @@ export default function MyBlogs() {
                             </DropdownMenuItem>
                           )}
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (
+                                confirm(
+                                  "Are you sure you want to delete this blog?",
+                                )
+                              ) {
+                                deleteBlog(blog._id);
+                              }
+                            }}
+                          >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
                           </DropdownMenuItem>

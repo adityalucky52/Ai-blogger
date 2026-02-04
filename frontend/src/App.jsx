@@ -1,6 +1,7 @@
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useState, useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
+import useAuthStore from "./store/authStore";
 
 // Layouts
 import PublicLayout from "./layouts/PublicLayout";
@@ -23,7 +24,7 @@ import Dashboard from "./pages/dashboard/Dashboard";
 import MyBlogs from "./pages/dashboard/MyBlogs";
 import CreateBlog from "./pages/dashboard/CreateBlog";
 import EditBlog from "./pages/dashboard/EditBlog";
-import AIGenerate from "./pages/dashboard/AIGenerate";
+
 import MediaLibrary from "./pages/dashboard/MediaLibrary";
 import Settings from "./pages/dashboard/Settings";
 
@@ -33,31 +34,25 @@ import ManageUsers from "./pages/admin/ManageUsers";
 import ManageBlogs from "./pages/admin/ManageBlogs";
 import ManageCategories from "./pages/admin/ManageCategories";
 
-// Auth Context
+// Auth Context - keeping for compatibility but logic moved to Zustand
 export const AuthContext = createContext(null);
 
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  const { user, login, register, logout, isAuthenticated, isLoading, error } =
+    useAuthStore();
+  return { user, login, register, logout, isAuthenticated, isLoading, error };
 };
 
 function App() {
-  const [user, setUser] = useState(null);
+  const initializeAuth = useAuthStore((state) => state.initializeAuth);
 
-  const login = (userData) => {
-    setUser(userData);
-  };
-
-  const logout = () => {
-    setUser(null);
-  };
+  useEffect(() => {
+    initializeAuth();
+  }, [initializeAuth]);
 
   return (
     <ThemeProvider defaultTheme="light">
-      <AuthContext.Provider value={{ user, login, logout }}>
+      <AuthContext.Provider value={{}}>
         <Routes>
           {/* Public Routes */}
           <Route element={<PublicLayout />}>
@@ -78,7 +73,7 @@ function App() {
             <Route path="blogs" element={<MyBlogs />} />
             <Route path="blogs/new" element={<CreateBlog />} />
             <Route path="blogs/edit/:id" element={<EditBlog />} />
-            <Route path="ai-generate" element={<AIGenerate />} />
+
             <Route path="media" element={<MediaLibrary />} />
             <Route path="settings" element={<Settings />} />
           </Route>

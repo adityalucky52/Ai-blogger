@@ -4,95 +4,21 @@ import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Code2, ArrowRight, Clock, Cpu, Globe, Shield } from "lucide-react";
+import useBlogStore from "../../store/blogStore";
+import { useEffect } from "react";
+import { stripHtmlTags } from "../../utils/textUtils";
 
-// Mock technology blog data - Latest articles
-const latestBlogs = [
-  {
-    id: 1,
-    title: "The Future of AI in Software Development: A Complete Guide",
-    excerpt:
-      "Discover how artificial intelligence is revolutionizing the way we write code. From GitHub Copilot to autonomous agents.",
-    slug: "future-of-ai-software-development",
-    category: "AI & ML",
-    author: { name: "Sarah Johnson", avatar: "" },
-    publishedAt: "2026-02-01",
-    readTime: "8 min read",
-    image:
-      "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop",
-  },
-  {
-    id: 2,
-    title: "Building Scalable APIs with Node.js and TypeScript",
-    excerpt:
-      "Learn best practices for building production-ready APIs that can handle millions of requests.",
-    slug: "scalable-apis-nodejs-typescript",
-    category: "Backend",
-    author: { name: "Mike Chen", avatar: "" },
-    publishedAt: "2026-01-28",
-    readTime: "6 min read",
-    image:
-      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&h=400&fit=crop",
-  },
-  {
-    id: 3,
-    title: "React 19: New Features and Migration Guide",
-    excerpt:
-      "Everything you need to know about React 19's new features and how to upgrade your existing applications.",
-    slug: "react-19-new-features",
-    category: "Frontend",
-    author: { name: "Emily Davis", avatar: "" },
-    publishedAt: "2026-01-25",
-    readTime: "12 min read",
-    image:
-      "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=800&h=400&fit=crop",
-  },
-  {
-    id: 4,
-    title: "Understanding Docker and Kubernetes for Beginners",
-    excerpt:
-      "A comprehensive guide to containerization and orchestration for modern applications.",
-    slug: "docker-kubernetes-beginners",
-    category: "DevOps",
-    author: { name: "Alex Turner", avatar: "" },
-    publishedAt: "2026-01-20",
-    readTime: "10 min read",
-    image:
-      "https://images.unsplash.com/photo-1605745341112-85968b19335e?w=800&h=400&fit=crop",
-  },
-  {
-    id: 5,
-    title: "Cybersecurity Best Practices for Web Developers",
-    excerpt:
-      "Protect your applications from common vulnerabilities and security threats.",
-    slug: "cybersecurity-web-developers",
-    category: "Security",
-    author: { name: "Jordan Lee", avatar: "" },
-    publishedAt: "2026-01-18",
-    readTime: "7 min read",
-    image:
-      "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=800&h=400&fit=crop",
-  },
-  {
-    id: 6,
-    title: "Getting Started with Next.js 15 and Server Components",
-    excerpt:
-      "Build faster, more efficient web applications with the latest Next.js features.",
-    slug: "nextjs-15-server-components",
-    category: "Frontend",
-    author: { name: "Sam Wilson", avatar: "" },
-    publishedAt: "2026-01-15",
-    readTime: "9 min read",
-    image:
-      "https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=800&h=400&fit=crop",
-  },
-];
+// Removed mock data
 
 function BlogCard({ blog }) {
   return (
     <Card className="group overflow-hidden border hover:shadow-lg transition-all duration-300">
       <div className="relative overflow-hidden h-48">
         <img
-          src={blog.image}
+          src={
+            blog.image ||
+            "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&h=400&fit=crop"
+          }
           alt={blog.title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
@@ -101,10 +27,11 @@ function BlogCard({ blog }) {
           {blog.category}
         </Badge>
       </div>
+      {/* ... content same ... */}
       <CardContent className="p-5">
         <Link to={`/blog/${blog.slug}`}>
           <h3 className="font-bold text-lg mb-2 line-clamp-2 group-hover:underline transition-all">
-            {blog.title}
+            {stripHtmlTags(blog.title)}
           </h3>
         </Link>
         <p className="text-muted-foreground text-sm line-clamp-2">
@@ -114,16 +41,18 @@ function BlogCard({ blog }) {
       <CardFooter className="px-5 pb-5 pt-0 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Avatar className="h-8 w-8">
-            <AvatarImage src={blog.author.avatar} />
+            <AvatarImage src={blog.author?.avatar} />
             <AvatarFallback className="bg-foreground text-background text-xs">
-              {blog.author.name.charAt(0)}
+              {blog.author?.name?.charAt(0) || "A"}
             </AvatarFallback>
           </Avatar>
-          <span className="text-sm font-medium">{blog.author.name}</span>
+          <span className="text-sm font-medium">
+            {blog.author?.name || "Unknown"}
+          </span>
         </div>
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           <Clock className="h-4 w-4" />
-          {blog.readTime}
+          {blog.readTime || "5 min read"}
         </div>
       </CardFooter>
     </Card>
@@ -131,6 +60,15 @@ function BlogCard({ blog }) {
 }
 
 export default function HomePage() {
+  const { blogs, fetchBlogs, isLoading } = useBlogStore();
+
+  useEffect(() => {
+    fetchBlogs();
+  }, [fetchBlogs]);
+
+  // Use first 6 blogs as latest
+  const latestBlogs = blogs.slice(0, 6);
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}

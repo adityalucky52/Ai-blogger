@@ -19,73 +19,9 @@ import {
   Clock,
   BarChart3,
 } from "lucide-react";
-
-// Mock data
-const stats = [
-  {
-    title: "Total Blogs",
-    value: "24",
-    change: "+3 this month",
-    icon: FileText,
-    color: "from-violet-500 to-indigo-500",
-  },
-  {
-    title: "Total Views",
-    value: "12.5K",
-    change: "+12% from last month",
-    icon: Eye,
-    color: "from-blue-500 to-cyan-500",
-  },
-  {
-    title: "Total Likes",
-    value: "1,842",
-    change: "+8% from last month",
-    icon: Heart,
-    color: "from-pink-500 to-rose-500",
-  },
-  {
-    title: "Engagement",
-    value: "23%",
-    change: "+2.5% improvement",
-    icon: TrendingUp,
-    color: "from-green-500 to-emerald-500",
-  },
-];
-
-const recentBlogs = [
-  {
-    id: 1,
-    title: "The Future of AI in Content Creation",
-    status: "published",
-    views: 2340,
-    likes: 156,
-    date: "2 days ago",
-  },
-  {
-    id: 2,
-    title: "Building Scalable Web Applications",
-    status: "published",
-    views: 1820,
-    likes: 98,
-    date: "5 days ago",
-  },
-  {
-    id: 3,
-    title: "10 Tips for Better Writing",
-    status: "draft",
-    views: 0,
-    likes: 0,
-    date: "1 week ago",
-  },
-  {
-    id: 4,
-    title: "Introduction to Machine Learning",
-    status: "published",
-    views: 3200,
-    likes: 245,
-    date: "2 weeks ago",
-  },
-];
+import useBlogStore from "../../store/blogStore";
+import { useEffect } from "react";
+import { stripHtmlTags } from "../../utils/textUtils";
 
 const quickActions = [
   {
@@ -93,15 +29,9 @@ const quickActions = [
     description: "Create a new blog post from scratch",
     href: "/dashboard/blogs/new",
     icon: PenSquare,
-    color: "bg-violet-500",
+    color: "bg-primary text-primary-foreground",
   },
-  {
-    title: "AI Generate",
-    description: "Use AI to generate blog content",
-    href: "/dashboard/ai-generate",
-    icon: Sparkles,
-    color: "bg-amber-500",
-  },
+
   {
     title: "View Analytics",
     description: "Check your blog performance",
@@ -112,6 +42,55 @@ const quickActions = [
 ];
 
 export default function Dashboard() {
+  const { myBlogs, fetchMyBlogs } = useBlogStore();
+
+  useEffect(() => {
+    fetchMyBlogs();
+  }, [fetchMyBlogs]);
+
+  // Calculate stats dynamically
+  const totalViews = myBlogs.reduce((acc, curr) => acc + (curr.views || 0), 0);
+  const totalLikes = myBlogs.reduce(
+    (acc, curr) => acc + (curr.likes?.length || 0),
+    0,
+  );
+
+  const stats = [
+    {
+      title: "Total Blogs",
+      value: myBlogs.length,
+      change: "Latest updates",
+      icon: FileText,
+      color: "from-violet-500 to-indigo-500",
+    },
+    {
+      title: "Total Views",
+      value: totalViews.toLocaleString(),
+      change: "Lifetime views",
+      icon: Eye,
+      color: "from-blue-500 to-cyan-500",
+    },
+    {
+      title: "Total Likes",
+      value: totalLikes.toLocaleString(),
+      change: "Lifetime likes",
+      icon: Heart,
+      color: "from-pink-500 to-rose-500",
+    },
+    {
+      title: "Engagement",
+      value:
+        totalViews > 0
+          ? ((totalLikes / totalViews) * 100).toFixed(1) + "%"
+          : "0%",
+      change: "Like rate",
+      icon: TrendingUp,
+      color: "from-green-500 to-emerald-500",
+    },
+  ];
+
+  const recentBlogs = myBlogs.slice(0, 4);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -187,7 +166,9 @@ export default function Dashboard() {
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <h4 className="font-medium truncate">{blog.title}</h4>
+                      <h4 className="font-medium truncate">
+                        {stripHtmlTags(blog.title)}
+                      </h4>
                       <Badge
                         variant={
                           blog.status === "published" ? "default" : "secondary"
@@ -258,35 +239,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* AI Tips */}
-      <Card className="border-0 shadow-md bg-gradient-to-br from-violet-600/10 via-indigo-600/10 to-purple-600/10">
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shrink-0">
-              <Sparkles className="h-8 w-8 text-white" />
-            </div>
-            <div className="flex-1 text-center md:text-left">
-              <h3 className="text-lg font-semibold mb-1">
-                Boost Your Content with AI
-              </h3>
-              <p className="text-muted-foreground">
-                Try our AI-powered tools to generate blog ideas, improve your
-                writing, and create SEO-optimized content in seconds.
-              </p>
-            </div>
-            <Button
-              asChild
-              className="bg-gradient-to-r from-violet-600 to-indigo-600 shrink-0"
-            >
-              <Link to="/dashboard/ai-generate">
-                Try AI Generator
-                <Sparkles className="h-4 w-4 ml-2" />
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

@@ -26,7 +26,7 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -38,20 +38,21 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
+    // setIsLoading(true); // store handles loading
 
-    // Simulate registration
-    setTimeout(() => {
-      login({
-        id: 1,
-        name: formData.name,
-        email: formData.email,
-        avatar: "",
-        role: "user",
-      });
-      setIsLoading(false);
+    if (formData.password !== formData.confirmPassword) {
+      // Ideally show error
+      return;
+    }
+
+    const success = await register(
+      formData.name,
+      formData.email,
+      formData.password,
+    );
+    if (success) {
       navigate("/dashboard");
-    }, 1000);
+    }
   };
 
   const passwordRequirements = [

@@ -14,25 +14,18 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, error } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
 
-    // Simulate login
-    setTimeout(() => {
-      login({
-        id: 1,
-        name: "John Doe",
-        email: email,
-        avatar: "",
-        role: "user",
-      });
-      setIsLoading(false);
+    // Form validation could go here
+
+    const success = await login(email, password);
+    if (success) {
       navigate("/dashboard");
-    }, 1000);
+    }
   };
 
   return (

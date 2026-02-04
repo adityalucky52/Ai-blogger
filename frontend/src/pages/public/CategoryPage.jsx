@@ -5,7 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Clock, ArrowRight, Search } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import useBlogStore from "../../store/blogStore";
+import { stripHtmlTags } from "../../utils/textUtils";
 
 // Topic categories for filtering
 const topics = [
@@ -17,141 +19,23 @@ const topics = [
   { name: "Cybersecurity", count: 19 },
 ];
 
-const mockBlogs = [
-  {
-    id: 1,
-    title: "The Future of AI in Software Development: A Complete Guide",
-    excerpt:
-      "Discover how artificial intelligence is revolutionizing the way we write code. From GitHub Copilot to autonomous agents.",
-    slug: "future-of-ai-software-development",
-    topic: "AI & Machine Learning",
-    author: { name: "Sarah Johnson", avatar: "" },
-    publishedAt: "Feb 1, 2026",
-    readTime: "8 min",
-    image:
-      "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=600&h=300&fit=crop",
-  },
-  {
-    id: 2,
-    title: "Building Scalable APIs with Node.js and TypeScript",
-    excerpt:
-      "Learn best practices for building production-ready APIs that can handle millions of requests.",
-    slug: "scalable-apis-nodejs-typescript",
-    topic: "Web Development",
-    author: { name: "Mike Chen", avatar: "" },
-    publishedAt: "Jan 28, 2026",
-    readTime: "6 min",
-    image:
-      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=600&h=300&fit=crop",
-  },
-  {
-    id: 3,
-    title: "React 19: New Features and Migration Guide",
-    excerpt:
-      "Everything you need to know about React 19's new features and how to upgrade your existing applications.",
-    slug: "react-19-new-features",
-    topic: "Web Development",
-    author: { name: "Emily Davis", avatar: "" },
-    publishedAt: "Jan 25, 2026",
-    readTime: "12 min",
-    image:
-      "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=600&h=300&fit=crop",
-  },
-  {
-    id: 4,
-    title: "Understanding Docker and Kubernetes for Beginners",
-    excerpt:
-      "A comprehensive guide to containerization and orchestration for modern applications.",
-    slug: "docker-kubernetes-beginners",
-    topic: "DevOps",
-    author: { name: "Alex Turner", avatar: "" },
-    publishedAt: "Jan 20, 2026",
-    readTime: "10 min",
-    image:
-      "https://images.unsplash.com/photo-1605745341112-85968b19335e?w=600&h=300&fit=crop",
-  },
-  {
-    id: 5,
-    title: "Cybersecurity Best Practices for Web Developers",
-    excerpt:
-      "Protect your applications from common vulnerabilities and security threats.",
-    slug: "cybersecurity-web-developers",
-    topic: "Cybersecurity",
-    author: { name: "Jordan Lee", avatar: "" },
-    publishedAt: "Jan 18, 2026",
-    readTime: "7 min",
-    image:
-      "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&h=300&fit=crop",
-  },
-  {
-    id: 6,
-    title: "Getting Started with Next.js 15 and Server Components",
-    excerpt:
-      "Build faster, more efficient web applications with the latest Next.js features.",
-    slug: "nextjs-15-server-components",
-    topic: "Web Development",
-    author: { name: "Sam Wilson", avatar: "" },
-    publishedAt: "Jan 15, 2026",
-    readTime: "9 min",
-    image:
-      "https://images.unsplash.com/photo-1627398242454-45a1465c2479?w=600&h=300&fit=crop",
-  },
-  {
-    id: 7,
-    title: "AWS vs Azure vs GCP: Cloud Platform Comparison 2026",
-    excerpt:
-      "A detailed comparison of the major cloud platforms to help you choose the right one.",
-    slug: "cloud-platform-comparison",
-    topic: "Cloud Computing",
-    author: { name: "Chris Brown", avatar: "" },
-    publishedAt: "Jan 12, 2026",
-    readTime: "15 min",
-    image:
-      "https://images.unsplash.com/photo-1544383835-bda2bc66a55d?w=600&h=300&fit=crop",
-  },
-  {
-    id: 8,
-    title: "Introduction to Large Language Models (LLMs)",
-    excerpt:
-      "Understanding the architecture and applications of modern language models like GPT and Claude.",
-    slug: "intro-to-llms",
-    topic: "AI & Machine Learning",
-    author: { name: "Lisa Wang", avatar: "" },
-    publishedAt: "Jan 10, 2026",
-    readTime: "11 min",
-    image:
-      "https://images.unsplash.com/photo-1555949963-aa79dcee981c?w=600&h=300&fit=crop",
-  },
-  {
-    id: 9,
-    title: "CI/CD Pipelines: A Complete Implementation Guide",
-    excerpt:
-      "Set up continuous integration and deployment for your projects with GitHub Actions.",
-    slug: "cicd-pipelines-guide",
-    topic: "DevOps",
-    author: { name: "David Kim", avatar: "" },
-    publishedAt: "Jan 8, 2026",
-    readTime: "14 min",
-    image:
-      "https://images.unsplash.com/photo-1618401471353-b98afee0b2eb?w=600&h=300&fit=crop",
-  },
-];
-
 export default function CategoryPage() {
   const { slug } = useParams();
+  const { blogs: filteredBlogs, fetchBlogs, isLoading } = useBlogStore();
   const [selectedTopic, setSelectedTopic] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Filter blogs based on selected topic and search query
-  const filteredBlogs = mockBlogs.filter((blog) => {
-    const matchesTopic =
-      selectedTopic === "All" || blog.topic === selectedTopic;
-    const matchesSearch =
-      searchQuery === "" ||
-      blog.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      blog.excerpt.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesTopic && matchesSearch;
-  });
+  useEffect(() => {
+    const params = { category: slug }; // Filter by category from URL (e.g., technology)
+    if (selectedTopic !== "All") params.topic = selectedTopic;
+    if (searchQuery) params.search = searchQuery;
+
+    const timeoutId = setTimeout(() => {
+      fetchBlogs(params);
+    }, 500); // Debounce
+
+    return () => clearTimeout(timeoutId);
+  }, [slug, selectedTopic, searchQuery, fetchBlogs]);
 
   return (
     <div className="min-h-screen">
@@ -231,7 +115,7 @@ export default function CategoryPage() {
                   <CardContent className="p-5">
                     <Link to={`/blog/${blog.slug}`}>
                       <h3 className="text-lg font-bold mb-2 line-clamp-2 group-hover:underline transition-colors">
-                        {blog.title}
+                        {stripHtmlTags(blog.title)}
                       </h3>
                     </Link>
                     <p className="text-muted-foreground text-sm line-clamp-2">

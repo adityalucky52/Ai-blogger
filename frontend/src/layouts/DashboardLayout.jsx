@@ -45,17 +45,14 @@ const sidebarLinks = [
     title: "My Blogs",
     href: "/dashboard/blogs",
     icon: FileText,
+    exclude: ["/dashboard/blogs/new"],
   },
   {
     title: "Create Blog",
     href: "/dashboard/blogs/new",
     icon: PenSquare,
   },
-  {
-    title: "AI Generate",
-    href: "/dashboard/ai-generate",
-    icon: Sparkles,
-  },
+
   {
     title: "Media Library",
     href: "/dashboard/media",
@@ -73,9 +70,15 @@ function Sidebar({ className = "" }) {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const isActive = (href, exact = false) => {
-    if (exact) return location.pathname === href;
-    return location.pathname.startsWith(href);
+  const isActive = (link) => {
+    if (link.exact) return location.pathname === link.href;
+    if (
+      link.exclude &&
+      link.exclude.some((path) => location.pathname.startsWith(path))
+    ) {
+      return false;
+    }
+    return location.pathname.startsWith(link.href);
   };
 
   const handleLogout = () => {
@@ -88,12 +91,10 @@ function Sidebar({ className = "" }) {
       {/* Logo */}
       <div className="p-6">
         <Link to="/" className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center">
-            <Sparkles className="h-5 w-5 text-white" />
+          <div className="h-9 w-9 rounded-lg bg-primary flex items-center justify-center">
+            <Sparkles className="h-5 w-5 text-primary-foreground" />
           </div>
-          <span className="text-xl font-bold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
-            BlogAI
-          </span>
+          <span className="text-xl font-bold text-foreground">BlogAI</span>
         </Link>
       </div>
 
@@ -103,7 +104,7 @@ function Sidebar({ className = "" }) {
       <nav className="flex-1 p-4 space-y-1">
         {sidebarLinks.map((link) => {
           const Icon = link.icon;
-          const active = isActive(link.href, link.exact);
+          const active = isActive(link);
           return (
             <Link
               key={link.href}
@@ -112,7 +113,7 @@ function Sidebar({ className = "" }) {
                 flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
                 ${
                   active
-                    ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-md"
+                    ? "bg-primary text-primary-foreground shadow-md"
                     : "text-muted-foreground hover:text-foreground hover:bg-accent"
                 }
               `}
@@ -132,7 +133,7 @@ function Sidebar({ className = "" }) {
         <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/50">
           <Avatar className="h-10 w-10">
             <AvatarImage src={user?.avatar} alt={user?.name} />
-            <AvatarFallback className="bg-gradient-to-br from-violet-600 to-indigo-600 text-white">
+            <AvatarFallback className="bg-primary text-primary-foreground">
               {user?.name?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
@@ -214,8 +215,8 @@ export default function DashboardLayout() {
 
           {/* Mobile Logo */}
           <Link to="/" className="lg:hidden flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center">
-              <Sparkles className="h-4 w-4 text-white" />
+            <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center">
+              <Sparkles className="h-4 w-4 text-primary-foreground" />
             </div>
           </Link>
 
@@ -241,7 +242,7 @@ export default function DashboardLayout() {
                 >
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={mockUser.avatar} alt={mockUser.name} />
-                    <AvatarFallback className="bg-gradient-to-br from-violet-600 to-indigo-600 text-white">
+                    <AvatarFallback className="bg-primary text-primary-foreground">
                       {mockUser.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -251,7 +252,7 @@ export default function DashboardLayout() {
                 <div className="flex items-center gap-2 p-2">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={mockUser.avatar} alt={mockUser.name} />
-                    <AvatarFallback className="bg-gradient-to-br from-violet-600 to-indigo-600 text-white text-sm">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                       {mockUser.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>

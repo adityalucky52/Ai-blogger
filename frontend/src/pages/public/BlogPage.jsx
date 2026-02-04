@@ -1,4 +1,6 @@
 import { useParams, Link } from "react-router-dom";
+import { useEffect } from "react";
+import useBlogStore from "../../store/blogStore";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -17,79 +19,25 @@ import {
   Link as LinkIcon,
 } from "lucide-react";
 
-// Mock blog data
-const blogData = {
-  id: 1,
-  title: "The Future of AI in Content Creation: A Complete Guide",
-  content: `
-    <p class="lead">Artificial Intelligence is transforming how we create, edit, and distribute content. In this comprehensive guide, we'll explore the current state of AI in content creation and what the future holds.</p>
-
-    <h2>The Rise of AI Writing Tools</h2>
-    <p>Over the past few years, we've witnessed an unprecedented surge in AI-powered writing tools. From simple grammar checkers to sophisticated content generators, these tools are becoming indispensable for content creators worldwide.</p>
-    
-    <p>The technology behind these tools has evolved significantly. Early versions relied on simple pattern matching and rule-based systems. Today's AI writers use advanced language models that can understand context, maintain consistency, and even adapt to different writing styles.</p>
-
-    <blockquote>
-      "AI won't replace writers, but writers who use AI will replace those who don't." — Industry Expert
-    </blockquote>
-
-    <h2>Key Benefits of AI-Assisted Writing</h2>
-    <p>There are several compelling reasons why content creators are embracing AI tools:</p>
-    
-    <ul>
-      <li><strong>Speed:</strong> Generate first drafts in minutes instead of hours</li>
-      <li><strong>Consistency:</strong> Maintain a consistent tone and style across all content</li>
-      <li><strong>SEO Optimization:</strong> AI can suggest keywords and optimize content for search engines</li>
-      <li><strong>Creativity Boost:</strong> Overcome writer's block with AI-generated ideas and outlines</li>
-    </ul>
-
-    <h2>The Human Element Remains Crucial</h2>
-    <p>Despite these advances, the human element remains irreplaceable. AI excels at generating content quickly, but it lacks the nuanced understanding, emotional depth, and creative spark that human writers bring to their work.</p>
-    
-    <p>The most effective approach combines AI efficiency with human creativity. Use AI to handle repetitive tasks, generate initial drafts, and optimize for SEO. Then, apply your unique perspective, expertise, and voice to create content that truly resonates with your audience.</p>
-
-    <h2>Looking Ahead</h2>
-    <p>The future of AI in content creation is bright. We can expect even more sophisticated tools that better understand context, can generate multimedia content, and seamlessly integrate with existing workflows.</p>
-    
-    <p>For content creators, the message is clear: embrace AI as a powerful ally in your creative toolkit. Those who learn to leverage these tools effectively will have a significant advantage in the increasingly competitive digital landscape.</p>
-  `,
-  category: "Technology",
-  tags: ["AI", "Content Creation", "Writing", "Future Tech"],
-  author: {
-    name: "Sarah Johnson",
-    avatar: "",
-    bio: "Tech writer and AI enthusiast. Passionate about exploring how technology shapes our future.",
-    followers: 2500,
-  },
-  publishedAt: "February 1, 2026",
-  readTime: "8 min read",
-  image:
-    "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=1200&h=600&fit=crop",
-  likes: 342,
-  comments: 56,
-};
-
-const relatedBlogs = [
-  {
-    id: 2,
-    title: "Building a Successful Blog in 2026",
-    slug: "building-successful-blog-2026",
-    image:
-      "https://images.unsplash.com/photo-1499750310107-5fef28a66643?w=400&h=200&fit=crop",
-    category: "Blogging",
-  },
-  {
-    id: 3,
-    title: "Mastering SEO: From Beginner to Expert",
-    slug: "mastering-seo-guide",
-    image:
-      "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&h=200&fit=crop",
-    category: "Marketing",
-  },
-];
+// Removed mock data
 
 export default function BlogPage() {
   const { slug } = useParams();
+  const { currentBlog: blogData, fetchBlogBySlug, isLoading } = useBlogStore();
+
+  useEffect(() => {
+    fetchBlogBySlug(slug);
+  }, [slug, fetchBlogBySlug]);
+
+  if (!blogData)
+    return (
+      <div className="min-h-screen pt-32 text-center text-muted-foreground">
+        Loading...
+      </div>
+    ); // Simple loading state
+
+  // Mock related for structure
+  const relatedBlogs = [];
 
   return (
     <article className="min-h-screen">
@@ -124,25 +72,29 @@ export default function BlogPage() {
           <div className="bg-background rounded-2xl shadow-xl p-8 md:p-12">
             <Badge className="mb-4">{blogData.category}</Badge>
 
-            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 leading-tight">
-              {blogData.title}
-            </h1>
+            <div
+              className="text-3xl md:text-4xl lg:text-5xl font-bold mb-6 leading-tight"
+              dangerouslySetInnerHTML={{ __html: blogData.title }}
+            />
 
             {/* Meta info */}
             <div className="flex flex-wrap items-center gap-4 text-muted-foreground mb-8">
               <div className="flex items-center gap-2">
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={blogData.author.avatar} />
+                  <AvatarImage src={blogData.author?.avatar} />
                   <AvatarFallback className="bg-gradient-to-br from-violet-600 to-indigo-600 text-white">
-                    {blogData.author.name.charAt(0)}
+                    {blogData.author?.name
+                      ? blogData.author.name.charAt(0)
+                      : "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div>
                   <p className="text-foreground font-medium">
-                    {blogData.author.name}
+                    {blogData.author?.name || "Unknown Author"}
                   </p>
                   <p className="text-xs">
-                    {blogData.author.followers.toLocaleString()} followers
+                    {(blogData.author?.followers || 0).toLocaleString()}{" "}
+                    followers
                   </p>
                 </div>
               </div>
@@ -181,14 +133,8 @@ export default function BlogPage() {
 
             {/* Article Content */}
             <div
-              className="prose prose-lg dark:prose-invert max-w-none mt-8"
+              className="blog-content prose prose-lg dark:prose-invert max-w-none mt-8"
               dangerouslySetInnerHTML={{ __html: blogData.content }}
-              style={{
-                "--tw-prose-headings": "hsl(var(--foreground))",
-                "--tw-prose-body": "hsl(var(--foreground))",
-                "--tw-prose-bold": "hsl(var(--foreground))",
-                "--tw-prose-quotes": "hsl(var(--muted-foreground))",
-              }}
             />
 
             {/* Tags */}
@@ -230,17 +176,19 @@ export default function BlogPage() {
             <div className="mt-8 p-6 rounded-xl bg-muted/50">
               <div className="flex items-start gap-4">
                 <Avatar className="h-16 w-16">
-                  <AvatarImage src={blogData.author.avatar} />
+                  <AvatarImage src={blogData.author?.avatar} />
                   <AvatarFallback className="bg-gradient-to-br from-violet-600 to-indigo-600 text-white text-xl">
-                    {blogData.author.name.charAt(0)}
+                    {blogData.author?.name
+                      ? blogData.author.name.charAt(0)
+                      : "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
                   <p className="font-semibold text-lg">
-                    {blogData.author.name}
+                    {blogData.author?.name || "Unknown Author"}
                   </p>
                   <p className="text-muted-foreground text-sm mt-1">
-                    {blogData.author.bio}
+                    {blogData.author?.bio || "No bio available."}
                   </p>
                   <Button className="mt-4" size="sm">
                     Follow
