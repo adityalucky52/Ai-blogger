@@ -76,7 +76,7 @@ jobs:
                 image: ${{ secrets.DOCKER_USERNAME }}/blogger-frontend:latest
                 container_name: blogger-frontend
                 ports:
-                  - "80:80"
+                  - "80:5173"
                 depends_on:
                   - backend
                 restart: always
