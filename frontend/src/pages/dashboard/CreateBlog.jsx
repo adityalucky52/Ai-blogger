@@ -148,20 +148,51 @@ export default function CreateBlog() {
   };
 
   const handlePublish = async () => {
+    // Validation
+    const isTitleEmpty =
+      !blog.title || blog.title === "<p><br></p>" || blog.title.trim() === "";
+    const isContentEmpty =
+      !blog.content ||
+      blog.content === "<p><br></p>" ||
+      blog.content.trim() === "";
+
+    if (isTitleEmpty) {
+      alert("Please enter a blog title.");
+      return;
+    }
+
+    if (isContentEmpty) {
+      alert("Please write some content for your blog.");
+      return;
+    }
+
     setIsPublishing(true);
     try {
+      // Create a plain text excerpt from content if one doesn't exist
+      const plainContent = blog.content.replace(/<[^>]+>/g, "");
+      const generatedExcerpt =
+        plainContent.substring(0, 150) +
+        (plainContent.length > 150 ? "..." : "");
+
       await createBlog({
         ...blog,
         category: "Technology",
+        excerpt: blog.excerpt || generatedExcerpt || "New Blog Post",
         image:
           blog.image ||
           "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop",
+        status: "published",
       });
       navigate("/dashboard/blogs");
     } catch (error) {
       console.error("Failed to publish:", error);
+      alert(
+        error.response?.data?.message ||
+          "Failed to publish blog. Please try again.",
+      );
+    } finally {
+      setIsPublishing(false);
     }
-    setIsPublishing(false);
   };
 
   const handleSaveDraft = async () => {

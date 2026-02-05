@@ -133,7 +133,9 @@ function Sidebar({ className = "" }) {
         <div className="flex items-center gap-3 p-3 rounded-lg bg-accent/50">
           <Avatar className="h-10 w-10">
             <AvatarImage src={user?.avatar} alt={user?.name} />
-            <AvatarFallback className="bg-primary text-primary-foreground">
+            <AvatarFallback
+              style={{ backgroundColor: "black", color: "white" }}
+            >
               {user?.name?.charAt(0).toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
@@ -242,7 +244,9 @@ export default function DashboardLayout() {
                 >
                   <Avatar className="h-9 w-9">
                     <AvatarImage src={mockUser.avatar} alt={mockUser.name} />
-                    <AvatarFallback className="bg-primary text-primary-foreground">
+                    <AvatarFallback
+                      style={{ backgroundColor: "black", color: "white" }}
+                    >
                       {mockUser.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -252,7 +256,7 @@ export default function DashboardLayout() {
                 <div className="flex items-center gap-2 p-2">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={mockUser.avatar} alt={mockUser.name} />
-                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                    <AvatarFallback className="bg-black text-white">
                       {mockUser.name?.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
