@@ -99,7 +99,7 @@ export default function Settings() {
                 <div className="relative">
                   <Avatar className="h-20 w-20">
                     <AvatarImage src="" />
-                    <AvatarFallback className="bg-gradient-to-br from-violet-600 to-indigo-600 text-white text-2xl">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-2xl">
                       {profile.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -371,10 +371,8 @@ export default function Settings() {
                 {["light", "dark", "system"].map((theme) => (
                   <button
                     key={theme}
-                    className={`p-4 border rounded-lg text-center hover:border-violet-500 transition-colors ${
-                      theme === "light"
-                        ? "border-violet-500 bg-violet-50 dark:bg-violet-900/20"
-                        : ""
+                    className={`p-4 border rounded-lg text-center hover:border-primary transition-colors ${
+                      theme === "light" ? "border-primary bg-accent" : ""
                     }`}
                   >
                     <div

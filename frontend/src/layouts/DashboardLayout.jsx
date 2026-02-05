@@ -148,7 +148,7 @@ function Sidebar({ className = "" }) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-red-600"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
             onClick={handleLogout}
           >
             <LogOut className="h-4 w-4" />
@@ -231,7 +231,7 @@ export default function DashboardLayout() {
             </Button>
             <Button variant="ghost" size="icon" className="relative">
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
+              <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-primary" />
             </Button>
 
             <DropdownMenu>
@@ -277,7 +277,7 @@ export default function DashboardLayout() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-600">
+                <DropdownMenuItem>
                   <LogOut className="mr-2 h-4 w-4" />
                   Logout
                 </DropdownMenuItem>

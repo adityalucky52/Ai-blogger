@@ -87,23 +87,19 @@ export default function MyBlogs() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Published</p>
-            <p className="text-2xl font-bold text-green-600">
-              {stats.published}
-            </p>
+            <p className="text-2xl font-bold">{stats.published}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Drafts</p>
-            <p className="text-2xl font-bold text-orange-600">{stats.drafts}</p>
+            <p className="text-2xl font-bold">{stats.drafts}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Total Views</p>
-            <p className="text-2xl font-bold text-blue-600">
-              {stats.views.toLocaleString()}
-            </p>
+            <p className="text-2xl font-bold">{stats.views.toLocaleString()}</p>
           </CardContent>
         </Card>
       </div>
@@ -208,15 +204,13 @@ export default function MyBlogs() {
                             }
                             className={
                               blog.status === "published"
-                                ? "bg-green-500"
-                                : "bg-orange-500"
+                                ? "bg-primary text-primary-foreground"
+                                : "bg-secondary text-secondary-foreground"
                             }
                           >
                             {blog.status}
                           </Badge>
-                          <Badge variant="outline">
-                            {blog.topic || blog.category}
-                          </Badge>
+                          <Badge variant="outline">{blog.category}</Badge>
                         </div>
                         <h3 className="text-lg font-semibold mb-1 line-clamp-1">
                           {stripHtmlTags(blog.title)}
@@ -268,7 +262,7 @@ export default function MyBlogs() {
                           )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-red-600"
+                            className="font-medium"
                             onClick={(e) => {
                               e.stopPropagation();
                               if (

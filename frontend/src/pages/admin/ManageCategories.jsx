@@ -33,20 +33,20 @@ const mockCategories = [
     name: "Technology",
     slug: "technology",
     blogs: 45,
-    color: "#3B82F6",
+    color: "#000000",
   },
-  { id: 2, name: "Lifestyle", slug: "lifestyle", blogs: 32, color: "#10B981" },
-  { id: 3, name: "Travel", slug: "travel", blogs: 24, color: "#F59E0B" },
-  { id: 4, name: "Business", slug: "business", blogs: 19, color: "#8B5CF6" },
-  { id: 5, name: "Marketing", slug: "marketing", blogs: 28, color: "#EC4899" },
+  { id: 2, name: "Lifestyle", slug: "lifestyle", blogs: 32, color: "#111111" },
+  { id: 3, name: "Travel", slug: "travel", blogs: 24, color: "#222222" },
+  { id: 4, name: "Business", slug: "business", blogs: 19, color: "#333333" },
+  { id: 5, name: "Marketing", slug: "marketing", blogs: 28, color: "#444444" },
   {
     id: 6,
     name: "Development",
     slug: "development",
     blogs: 38,
-    color: "#06B6D4",
+    color: "#555555",
   },
-  { id: 7, name: "Writing", slug: "writing", blogs: 15, color: "#EF4444" },
+  { id: 7, name: "Writing", slug: "writing", blogs: 15, color: "#666666" },
 ];
 
 export default function ManageCategories() {
@@ -91,7 +91,7 @@ export default function ManageCategories() {
           </p>
         </div>
         <Button
-          className="bg-gradient-to-r from-rose-600 to-orange-600"
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
           onClick={() => setShowAddDialog(true)}
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -104,8 +104,8 @@ export default function ManageCategories() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                <FolderTree className="h-5 w-5 text-violet-600" />
+              <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center">
+                <FolderTree className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">
@@ -119,8 +119,8 @@ export default function ManageCategories() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-blue-600" />
+              <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center">
+                <FileText className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Blogs</p>
@@ -132,8 +132,8 @@ export default function ManageCategories() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <FileText className="h-5 w-5 text-green-600" />
+              <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center">
+                <FileText className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">
@@ -190,7 +190,6 @@ export default function ManageCategories() {
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      className="text-red-600"
                       onClick={() => handleDeleteCategory(category.id)}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
@@ -225,13 +224,13 @@ export default function ManageCategories() {
               <label className="text-sm font-medium">Color</label>
               <div className="flex gap-2">
                 {[
-                  "#3B82F6",
-                  "#10B981",
-                  "#F59E0B",
-                  "#8B5CF6",
-                  "#EC4899",
-                  "#EF4444",
-                  "#06B6D4",
+                  "#000000",
+                  "#222222",
+                  "#444444",
+                  "#666666",
+                  "#888888",
+                  "#AAAAAA",
+                  "#CCCCCC",
                 ].map((color) => (
                   <button
                     key={color}
@@ -272,13 +271,13 @@ export default function ManageCategories() {
               <label className="text-sm font-medium">Color</label>
               <div className="flex gap-2">
                 {[
-                  "#3B82F6",
-                  "#10B981",
-                  "#F59E0B",
-                  "#8B5CF6",
-                  "#EC4899",
-                  "#EF4444",
-                  "#06B6D4",
+                  "#000000",
+                  "#222222",
+                  "#444444",
+                  "#666666",
+                  "#888888",
+                  "#AAAAAA",
+                  "#CCCCCC",
                 ].map((color) => (
                   <button
                     key={color}

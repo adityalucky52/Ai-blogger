@@ -120,7 +120,7 @@ export default function ManageUsers() {
             View and manage all registered users
           </p>
         </div>
-        <Button className="bg-gradient-to-r from-rose-600 to-orange-600">
+        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
           <UserPlus className="h-4 w-4 mr-2" />
           Add User
         </Button>
@@ -131,8 +131,8 @@ export default function ManageUsers() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <Users className="h-5 w-5 text-blue-600" />
+              <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center">
+                <Users className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Users</p>
@@ -144,14 +144,12 @@ export default function ManageUsers() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                <UserCheck className="h-5 w-5 text-green-600" />
+              <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center">
+                <UserCheck className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {stats.active}
-                </p>
+                <p className="text-2xl font-bold">{stats.active}</p>
               </div>
             </div>
           </CardContent>
@@ -159,14 +157,12 @@ export default function ManageUsers() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center">
-                <Shield className="h-5 w-5 text-violet-600" />
+              <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center">
+                <Shield className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Admins</p>
-                <p className="text-2xl font-bold text-violet-600">
-                  {stats.admins}
-                </p>
+                <p className="text-2xl font-bold">{stats.admins}</p>
               </div>
             </div>
           </CardContent>
@@ -174,14 +170,12 @@ export default function ManageUsers() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                <UserX className="h-5 w-5 text-orange-600" />
+              <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center">
+                <UserX className="h-5 w-5" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Inactive</p>
-                <p className="text-2xl font-bold text-orange-600">
-                  {stats.inactive}
-                </p>
+                <p className="text-2xl font-bold">{stats.inactive}</p>
               </div>
             </div>
           </CardContent>
@@ -269,7 +263,7 @@ export default function ManageUsers() {
                       <div className="flex items-center gap-3">
                         <Avatar>
                           <AvatarImage src={user.avatar} />
-                          <AvatarFallback className="bg-gradient-to-br from-rose-600 to-orange-600 text-white">
+                          <AvatarFallback className="bg-primary text-primary-foreground">
                             {user.name.charAt(0)}
                           </AvatarFallback>
                         </Avatar>
@@ -298,8 +292,8 @@ export default function ManageUsers() {
                         variant="outline"
                         className={
                           user.status === "active"
-                            ? "border-green-500 text-green-600"
-                            : "border-orange-500 text-orange-600"
+                            ? "border-primary text-foreground"
+                            : "border-secondary text-muted-foreground"
                         }
                       >
                         {user.status}
@@ -345,7 +339,6 @@ export default function ManageUsers() {
                           )}
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
-                            className="text-red-600"
                             onClick={() =>
                               setDeleteDialog({ open: true, user })
                             }

@@ -9,25 +9,13 @@ import { useState, useEffect } from "react";
 import useBlogStore from "../../store/blogStore";
 import { stripHtmlTags } from "../../utils/textUtils";
 
-// Topic categories for filtering
-const topics = [
-  { name: "All", count: 156 },
-  { name: "AI & Machine Learning", count: 45 },
-  { name: "Web Development", count: 38 },
-  { name: "Cloud Computing", count: 28 },
-  { name: "DevOps", count: 24 },
-  { name: "Cybersecurity", count: 19 },
-];
-
 export default function CategoryPage() {
   const { slug } = useParams();
   const { blogs: filteredBlogs, fetchBlogs, isLoading } = useBlogStore();
-  const [selectedTopic, setSelectedTopic] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     const params = { category: slug }; // Filter by category from URL (e.g., technology)
-    if (selectedTopic !== "All") params.topic = selectedTopic;
     if (searchQuery) params.search = searchQuery;
 
     const timeoutId = setTimeout(() => {
@@ -35,7 +23,7 @@ export default function CategoryPage() {
     }, 500); // Debounce
 
     return () => clearTimeout(timeoutId);
-  }, [slug, selectedTopic, searchQuery, fetchBlogs]);
+  }, [slug, searchQuery, fetchBlogs]);
 
   return (
     <div className="min-h-screen">
@@ -60,7 +48,7 @@ export default function CategoryPage() {
       <section className="py-8 border-b">
         <div className="container mx-auto px-4">
           {/* Search */}
-          <div className="relative max-w-md mx-auto mb-6">
+          <div className="relative max-w-md mx-auto">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search articles..."
@@ -68,25 +56,6 @@ export default function CategoryPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
-          </div>
-
-          {/* Topic Categories */}
-          <div className="flex flex-wrap gap-2 justify-center">
-            {topics.map((topic) => (
-              <Badge
-                key={topic.name}
-                variant={selectedTopic === topic.name ? "default" : "outline"}
-                className={`px-4 py-2 text-sm font-medium cursor-pointer transition-colors ${
-                  selectedTopic === topic.name
-                    ? "bg-foreground text-background"
-                    : "hover:bg-accent"
-                }`}
-                onClick={() => setSelectedTopic(topic.name)}
-              >
-                {topic.name}
-                <span className="ml-2 opacity-60">({topic.count})</span>
-              </Badge>
-            ))}
           </div>
         </div>
       </section>
@@ -109,7 +78,7 @@ export default function CategoryPage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                     <Badge className="absolute top-4 left-4 bg-background text-foreground">
-                      {blog.topic}
+                      {blog.category}
                     </Badge>
                   </div>
                   <CardContent className="p-5">
@@ -149,7 +118,6 @@ export default function CategoryPage() {
                 variant="outline"
                 className="mt-4"
                 onClick={() => {
-                  setSelectedTopic("All");
                   setSearchQuery("");
                 }}
               >

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../../api/axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,14 +32,6 @@ import "quill/dist/quill.snow.css";
 
 import useBlogStore from "../../store/blogStore";
 
-const topics = [
-  "AI & Machine Learning",
-  "Web Development",
-  "Cloud Computing",
-  "DevOps",
-  "Cybersecurity",
-];
-
 export default function CreateBlog() {
   const navigate = useNavigate();
   const { createBlog, generateAIContent, isLoading } = useBlogStore();
@@ -49,17 +42,16 @@ export default function CreateBlog() {
     title: "",
     content: "",
     excerpt: "",
-    topic: "",
-    tags: [],
     featuredImage: null,
   });
-  const [tagInput, setTagInput] = useState("");
 
   // Quill Editor Refs
   const titleEditorRef = useRef(null);
   const titleQuillRef = useRef(null);
   const editorRef = useRef(null);
   const quillRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   // Initialize Title Quill Editor
   useEffect(() => {
@@ -126,18 +118,33 @@ export default function CreateBlog() {
     }
   }, [blog.content]);
 
-  const handleAddTag = (e) => {
-    if (e.key === "Enter" && tagInput.trim()) {
-      e.preventDefault();
-      if (!blog.tags.includes(tagInput.trim())) {
-        setBlog({ ...blog, tags: [...blog.tags, tagInput.trim()] });
-      }
-      setTagInput("");
-    }
-  };
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const handleRemoveTag = (tagToRemove) => {
-    setBlog({ ...blog, tags: blog.tags.filter((tag) => tag !== tagToRemove) });
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size exceeds 5MB");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setIsUploading(true);
+    try {
+      const response = await api.post("/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setBlog((prev) => ({ ...prev, image: response.data.url }));
+    } catch (error) {
+      console.error("Upload failed", error);
+      const msg =
+        error.response?.data?.message ||
+        "Image upload failed. Please check your connection.";
+      alert(msg);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handlePublish = async () => {
@@ -146,8 +153,8 @@ export default function CreateBlog() {
       await createBlog({
         ...blog,
         category: "Technology",
-        topic: blog.topic,
         image:
+          blog.image ||
           "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop",
       });
       navigate("/dashboard/blogs");
@@ -168,12 +175,12 @@ export default function CreateBlog() {
         ...blog,
         status: "draft",
         category: "Technology",
-        topic: blog.topic || "General",
         excerpt:
           blog.excerpt ||
           blog.content.substring(0, 160).replace(/<[^>]*>/g, "") ||
           "Draft blog post",
         image:
+          blog.image ||
           "https://images.unsplash.com/photo-1677442136019-21780ecad995?w=800&h=400&fit=crop",
       });
       alert("Draft saved successfully!");
@@ -242,7 +249,7 @@ export default function CreateBlog() {
           </Button>
 
           <Button
-            className="bg-linear-to-r from-violet-600 to-indigo-600"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={handlePublish}
             disabled={isPublishing}
           >
@@ -298,7 +305,7 @@ export default function CreateBlog() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="bg-violet-50 text-violet-600 border-violet-200 hover:bg-violet-100 hover:text-violet-700"
+                  className="bg-background hover:bg-accent"
                   onClick={() => handleAIGenerate("generate")}
                   disabled={isLoading || !blog.title}
                 >
@@ -318,69 +325,54 @@ export default function CreateBlog() {
               <CardTitle className="text-lg">Featured Image</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-accent/50 transition-colors cursor-pointer">
-                <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">
-                  Click or drag to upload
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  PNG, JPG up to 5MB
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Topic */}
-          <Card className="border-0 shadow-md">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Topic</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {blog.topic || "Select topic"}
-                    <ChevronDown className="h-4 w-4 opacity-50" />
+              {blog.image ? (
+                <div
+                  className="relative group cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <img
+                    src={blog.image}
+                    alt="Featured"
+                    className="w-full h-40 object-cover rounded-lg group-hover:opacity-90 transition-opacity"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="bg-black/50 text-white px-2 py-1 rounded text-xs">
+                      Change Image
+                    </span>
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 h-8 w-8 z-10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setBlog({ ...blog, image: null });
+                    }}
+                  >
+                    <X className="h-4 w-4" />
                   </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full">
-                  {topics.map((t) => (
-                    <DropdownMenuItem
-                      key={t}
-                      onClick={() => setBlog({ ...blog, topic: t })}
-                    >
-                      {t}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </CardContent>
-          </Card>
-
-          {/* Tags */}
-          <Card className="border-0 shadow-md">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Tags</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Input
-                placeholder="Add tag and press Enter"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleAddTag}
-              />
-              {blog.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {blog.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="gap-1">
-                      {tag}
-                      <button onClick={() => handleRemoveTag(tag)}>
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
+                </div>
+              ) : (
+                <div
+                  className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-accent/50 transition-colors cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+                  <p className="text-sm text-muted-foreground">
+                    {isUploading ? "Uploading..." : "Click or drag to upload"}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    PNG, JPG up to 5MB
+                  </p>
                 </div>
               )}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/*"
+                className="hidden"
+              />
             </CardContent>
           </Card>
         </div>
@@ -399,29 +391,31 @@ export default function CreateBlog() {
           </DialogHeader>
           <div className="space-y-6 py-4">
             {/* Preview Featured Image */}
-            <div className="w-full h-48 bg-linear-to-r from-violet-500 to-indigo-500 rounded-lg flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity">
-              <span className="text-white/60">
-                Click to upload Featured Image
-              </span>
-            </div>
-
-            {/* Preview Topic & Tags */}
-            <div className="flex flex-wrap items-center gap-2">
-              {blog.topic && (
-                <Badge className="bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300">
-                  {blog.topic}
-                </Badge>
+            <div
+              className="w-full h-48 bg-muted rounded-lg flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity overflow-hidden relative"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              {blog.image ? (
+                <img
+                  src={blog.image}
+                  alt="Featured"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="text-center">
+                  <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                  <span className="text-muted-foreground">
+                    {isUploading
+                      ? "Uploading..."
+                      : "Click to upload Featured Image"}
+                  </span>
+                </div>
               )}
-              {blog.tags.map((tag) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                </Badge>
-              ))}
             </div>
 
             {/* Editable Title */}
             <div
-              className="text-3xl font-bold outline-none border-2 border-transparent rounded-lg p-2 hover:border-violet-200 focus:border-violet-400 dark:hover:border-violet-800 dark:focus:border-violet-600 transition-colors"
+              className="text-3xl font-bold outline-none border-2 border-transparent rounded-lg p-2 hover:border-input focus:border-ring transition-colors"
               contentEditable
               suppressContentEditableWarning
               dangerouslySetInnerHTML={{
@@ -439,7 +433,7 @@ export default function CreateBlog() {
 
             {/* Editable Content */}
             <div
-              className="blog-content prose dark:prose-invert max-w-none outline-none border-2 border-transparent rounded-lg p-4 min-h-[200px] hover:border-violet-200 focus:border-violet-400 dark:hover:border-violet-800 dark:focus:border-violet-600 transition-colors"
+              className="blog-content prose dark:prose-invert max-w-none outline-none border-2 border-transparent rounded-lg p-4 min-h-[200px] hover:border-input focus:border-ring transition-colors"
               contentEditable
               suppressContentEditableWarning
               dangerouslySetInnerHTML={{

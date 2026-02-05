@@ -37,7 +37,7 @@ const quickActions = [
     description: "Check your blog performance",
     href: "/dashboard/blogs",
     icon: BarChart3,
-    color: "bg-blue-500",
+    color: "bg-secondary text-secondary-foreground",
   },
 ];
 
@@ -61,21 +61,21 @@ export default function Dashboard() {
       value: myBlogs.length,
       change: "Latest updates",
       icon: FileText,
-      color: "from-violet-500 to-indigo-500",
+      color: "bg-primary text-primary-foreground",
     },
     {
       title: "Total Views",
       value: totalViews.toLocaleString(),
       change: "Lifetime views",
       icon: Eye,
-      color: "from-blue-500 to-cyan-500",
+      color: "bg-primary text-primary-foreground",
     },
     {
       title: "Total Likes",
       value: totalLikes.toLocaleString(),
       change: "Lifetime likes",
       icon: Heart,
-      color: "from-pink-500 to-rose-500",
+      color: "bg-primary text-primary-foreground",
     },
     {
       title: "Engagement",
@@ -85,7 +85,7 @@ export default function Dashboard() {
           : "0%",
       change: "Like rate",
       icon: TrendingUp,
-      color: "from-green-500 to-emerald-500",
+      color: "bg-primary text-primary-foreground",
     },
   ];
 
@@ -103,7 +103,7 @@ export default function Dashboard() {
         </div>
         <Button
           asChild
-          className="bg-gradient-to-r from-violet-600 to-indigo-600"
+          className="bg-primary text-primary-foreground hover:bg-primary/90"
         >
           <Link to="/dashboard/blogs/new">
             <PenSquare className="h-4 w-4 mr-2" />
@@ -128,12 +128,14 @@ export default function Dashboard() {
                       {stat.title}
                     </p>
                     <p className="text-3xl font-bold mt-1">{stat.value}</p>
-                    <p className="text-xs text-green-600 mt-1">{stat.change}</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {stat.change}
+                    </p>
                   </div>
                   <div
-                    className={`h-12 w-12 rounded-xl bg-gradient-to-br ${stat.color} flex items-center justify-center`}
+                    className={`h-12 w-12 rounded-xl ${stat.color} flex items-center justify-center`}
                   >
-                    <Icon className="h-6 w-6 text-white" />
+                    <Icon className="h-6 w-6" />
                   </div>
                 </div>
               </CardContent>
@@ -174,7 +176,9 @@ export default function Dashboard() {
                           blog.status === "published" ? "default" : "secondary"
                         }
                         className={
-                          blog.status === "published" ? "bg-green-500" : ""
+                          blog.status === "published"
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground"
                         }
                       >
                         {blog.status}
@@ -222,17 +226,17 @@ export default function Dashboard() {
                   <div
                     className={`h-10 w-10 rounded-lg ${action.color} flex items-center justify-center`}
                   >
-                    <Icon className="h-5 w-5 text-white" />
+                    <Icon className="h-5 w-5" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-medium group-hover:text-violet-600 transition-colors">
+                    <h4 className="font-medium group-hover:text-foreground transition-colors">
                       {action.title}
                     </h4>
                     <p className="text-sm text-muted-foreground">
                       {action.description}
                     </p>
                   </div>
-                  <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-violet-600 transition-colors" />
+                  <ArrowUpRight className="h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors" />
                 </Link>
               );
             })}

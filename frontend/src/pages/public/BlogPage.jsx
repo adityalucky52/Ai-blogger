@@ -137,22 +137,6 @@ export default function BlogPage() {
               dangerouslySetInnerHTML={{ __html: blogData.content }}
             />
 
-            {/* Tags */}
-            <div className="mt-12 pt-8 border-t">
-              <p className="text-sm font-medium mb-3">Tags</p>
-              <div className="flex flex-wrap gap-2">
-                {blogData.tags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant="secondary"
-                    className="cursor-pointer hover:bg-accent"
-                  >
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-
             {/* Share */}
             <div className="mt-8 pt-8 border-t">
               <p className="text-sm font-medium mb-3">Share this article</p>

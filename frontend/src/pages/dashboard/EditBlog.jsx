@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import api from "../../api/axios";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,14 +33,6 @@ import "quill/dist/quill.snow.css";
 
 import useBlogStore from "../../store/blogStore";
 
-const topics = [
-  "AI & Machine Learning",
-  "Web Development",
-  "Cloud Computing",
-  "DevOps",
-  "Cybersecurity",
-];
-
 export default function EditBlog() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -54,13 +47,14 @@ export default function EditBlog() {
   const [isUpdating, setIsUpdating] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [blog, setBlog] = useState(null);
-  const [tagInput, setTagInput] = useState("");
 
   // Quill Editor Refs
   const titleEditorRef = useRef(null);
   const titleQuillRef = useRef(null);
   const editorRef = useRef(null);
   const quillRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     fetchBlogById(id);
@@ -72,8 +66,6 @@ export default function EditBlog() {
         title: currentBlog.title || "",
         content: currentBlog.content || "",
         excerpt: currentBlog.excerpt || "",
-        topic: currentBlog.topic || "",
-        tags: currentBlog.tags || [],
         status: currentBlog.status || "published",
         featuredImage: currentBlog.image || null,
       });
@@ -141,18 +133,31 @@ export default function EditBlog() {
     }
   }, [blog]);
 
-  const handleAddTag = (e) => {
-    if (e.key === "Enter" && tagInput.trim()) {
-      e.preventDefault();
-      if (!blog.tags.includes(tagInput.trim())) {
-        setBlog({ ...blog, tags: [...blog.tags, tagInput.trim()] });
-      }
-      setTagInput("");
-    }
-  };
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const handleRemoveTag = (tagToRemove) => {
-    setBlog({ ...blog, tags: blog.tags.filter((tag) => tag !== tagToRemove) });
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File size exceeds 5MB");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setIsUploading(true);
+    try {
+      const response = await api.post("/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      setBlog((prev) => ({ ...prev, featuredImage: response.data.url }));
+    } catch (error) {
+      console.error("Upload failed", error);
+      const msg = error.response?.data?.message || "Image upload failed";
+      alert(msg);
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleUpdate = async () => {
@@ -211,7 +216,7 @@ export default function EditBlog() {
   if (!blog)
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-8 w-8 animate-spin text-violet-600" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
         <span className="ml-2">Loading blog data...</span>
       </div>
     );
@@ -239,7 +244,9 @@ export default function EditBlog() {
           <Badge
             variant={blog.status === "published" ? "default" : "secondary"}
             className={
-              blog.status === "published" ? "bg-green-500" : "bg-orange-500"
+              blog.status === "published"
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-secondary-foreground"
             }
           >
             {blog.status}
@@ -249,7 +256,7 @@ export default function EditBlog() {
             Preview
           </Button>
           <Button
-            className="bg-linear-to-r from-violet-600 to-indigo-600"
+            className="bg-primary text-primary-foreground hover:bg-primary/90"
             onClick={handleUpdate}
             disabled={isUpdating}
           >
@@ -290,7 +297,7 @@ export default function EditBlog() {
                 <Button
                   size="sm"
                   variant="outline"
-                  className="bg-violet-50 text-violet-600 border-violet-200 hover:bg-violet-100 hover:text-violet-700"
+                  className="bg-background hover:bg-accent"
                   onClick={handleAIGenerate}
                   disabled={isLoading}
                 >
@@ -311,29 +318,50 @@ export default function EditBlog() {
             </CardHeader>
             <CardContent>
               {blog.featuredImage ? (
-                <div className="relative">
+                <div
+                  className="relative group cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   <img
                     src={blog.featuredImage}
                     alt="Featured"
-                    className="w-full h-40 object-cover rounded-lg"
+                    className="w-full h-40 object-cover rounded-lg group-hover:opacity-90 transition-opacity"
                   />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="bg-black/50 text-white px-2 py-1 rounded text-xs">
+                      Change Image
+                    </span>
+                  </div>
                   <Button
                     variant="destructive"
                     size="icon"
-                    className="absolute top-2 right-2 h-8 w-8"
-                    onClick={() => setBlog({ ...blog, featuredImage: null })}
+                    className="absolute top-2 right-2 h-8 w-8 z-10"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setBlog({ ...blog, featuredImage: null });
+                    }}
                   >
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
-                <div className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-accent/50 transition-colors cursor-pointer">
+                <div
+                  className="border-2 border-dashed rounded-lg p-8 text-center hover:bg-accent/50 transition-colors cursor-pointer"
+                  onClick={() => fileInputRef.current?.click()}
+                >
                   <Upload className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
                   <p className="text-sm text-muted-foreground">
-                    Click to upload image
+                    {isUploading ? "Uploading..." : "Click to upload image"}
                   </p>
                 </div>
               )}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleImageUpload}
+                accept="image/*"
+                className="hidden"
+              />
             </CardContent>
           </Card>
 
@@ -366,66 +394,10 @@ export default function EditBlog() {
             </CardContent>
           </Card>
 
-          {/* Topic */}
-          <Card className="border-0 shadow-md">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Topic</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between">
-                    {blog.topic || "Select topic"}
-                    <ChevronDown className="h-4 w-4 opacity-50" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-full">
-                  {topics.map((t) => (
-                    <DropdownMenuItem
-                      key={t}
-                      onClick={() => setBlog({ ...blog, topic: t })}
-                    >
-                      {t}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </CardContent>
-          </Card>
-
-          {/* Tags */}
-          <Card className="border-0 shadow-md">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Tags</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Input
-                placeholder="Add tag and press Enter"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={handleAddTag}
-              />
-              {blog.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {blog.tags.map((tag) => (
-                    <Badge key={tag} variant="secondary" className="gap-1">
-                      {tag}
-                      <button onClick={() => handleRemoveTag(tag)}>
-                        <X className="h-3 w-3" />
-                      </button>
-                    </Badge>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
           {/* Danger Zone */}
-          <Card className="border-0 shadow-md border-red-200">
+          <Card className="border-0 shadow-md">
             <CardHeader className="pb-3">
-              <CardTitle className="text-lg text-red-600">
-                Danger Zone
-              </CardTitle>
+              <CardTitle className="text-lg">Danger Zone</CardTitle>
             </CardHeader>
             <CardContent>
               <Button
@@ -454,7 +426,7 @@ export default function EditBlog() {
           </DialogHeader>
           <div className="space-y-6 py-4">
             {/* Preview Featured Image */}
-            <div className="w-full h-48 bg-linear-to-r from-violet-500 to-indigo-500 rounded-lg flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity">
+            <div className="w-full h-48 bg-muted rounded-lg flex items-center justify-center cursor-pointer hover:opacity-90 transition-opacity">
               {blog.featuredImage ? (
                 <img
                   src={blog.featuredImage}
@@ -468,23 +440,9 @@ export default function EditBlog() {
               )}
             </div>
 
-            {/* Preview Topic & Tags */}
-            <div className="flex flex-wrap items-center gap-2">
-              {blog.topic && (
-                <Badge className="bg-violet-100 text-violet-700 dark:bg-violet-900 dark:text-violet-300">
-                  {blog.topic}
-                </Badge>
-              )}
-              {blog.tags.map((tag) => (
-                <Badge key={tag} variant="secondary">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-
             {/* Editable Title */}
             <div
-              className="text-3xl font-bold outline-none border-2 border-transparent rounded-lg p-2 hover:border-violet-200 focus:border-violet-400 dark:hover:border-violet-800 dark:focus:border-violet-600 transition-colors"
+              className="text-3xl font-bold outline-none border-2 border-transparent rounded-lg p-2 hover:border-input focus:border-ring transition-colors"
               contentEditable
               suppressContentEditableWarning
               dangerouslySetInnerHTML={{
@@ -502,7 +460,7 @@ export default function EditBlog() {
 
             {/* Editable Content */}
             <div
-              className="blog-content prose dark:prose-invert max-w-none outline-none border-2 border-transparent rounded-lg p-4 min-h-[200px] hover:border-violet-200 focus:border-violet-400 dark:hover:border-violet-800 dark:focus:border-violet-600 transition-colors"
+              className="blog-content prose dark:prose-invert max-w-none outline-none border-2 border-transparent rounded-lg p-4 min-h-[200px] hover:border-input focus:border-ring transition-colors"
               contentEditable
               suppressContentEditableWarning
               dangerouslySetInnerHTML={{

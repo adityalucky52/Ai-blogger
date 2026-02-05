@@ -106,7 +106,7 @@ export default function MediaLibrary() {
             Manage your uploaded images and files
           </p>
         </div>
-        <Button className="bg-gradient-to-r from-violet-600 to-indigo-600">
+        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
           <Upload className="h-4 w-4 mr-2" />
           Upload Files
         </Button>
@@ -123,21 +123,19 @@ export default function MediaLibrary() {
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Images</p>
-            <p className="text-2xl font-bold text-blue-600">
-              {mockMedia.length}
-            </p>
+            <p className="text-2xl font-bold">{mockMedia.length}</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">Storage Used</p>
-            <p className="text-2xl font-bold text-green-600">8.4 MB</p>
+            <p className="text-2xl font-bold">8.4 MB</p>
           </CardContent>
         </Card>
         <Card className="border-0 shadow-sm">
           <CardContent className="p-4">
             <p className="text-sm text-muted-foreground">This Month</p>
-            <p className="text-2xl font-bold text-violet-600">+3</p>
+            <p className="text-2xl font-bold">+3</p>
           </CardContent>
         </Card>
       </div>
@@ -176,7 +174,7 @@ export default function MediaLibrary() {
       </Card>
 
       {/* Upload Zone */}
-      <Card className="border-0 shadow-sm border-2 border-dashed hover:border-violet-500 transition-colors cursor-pointer">
+      <Card className="border-0 shadow-sm border-2 border-dashed hover:border-primary transition-colors cursor-pointer">
         <CardContent className="p-8 text-center">
           <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
           <p className="font-medium mb-1">Drop files here or click to upload</p>
@@ -193,7 +191,7 @@ export default function MediaLibrary() {
             <Card
               key={media.id}
               className={`group border-0 shadow-sm overflow-hidden cursor-pointer transition-all hover:shadow-lg ${
-                selectedMedia?.id === media.id ? "ring-2 ring-violet-600" : ""
+                selectedMedia?.id === media.id ? "ring-2 ring-primary" : ""
               }`}
               onClick={() => setSelectedMedia(media)}
             >
@@ -244,7 +242,7 @@ export default function MediaLibrary() {
                         <Download className="h-4 w-4 mr-2" />
                         Download
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600">
+                      <DropdownMenuItem>
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
                       </DropdownMenuItem>
@@ -308,7 +306,7 @@ export default function MediaLibrary() {
                       <Download className="h-4 w-4 mr-2" />
                       Download
                     </DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600">
+                    <DropdownMenuItem>
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
                     </DropdownMenuItem>

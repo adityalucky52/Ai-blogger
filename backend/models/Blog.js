@@ -29,7 +29,7 @@ const blogSchema = new mongoose.Schema(
     },
     topic: {
       type: String,
-      required: true, // e.g., "AI & Machine Learning", "Web Development"
+      required: false, // e.g., "AI & Machine Learning", "Web Development"
     },
     author: {
       type: mongoose.Schema.Types.ObjectId,
