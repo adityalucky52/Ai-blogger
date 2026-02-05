@@ -59,18 +59,11 @@ jobs:
           script: |
             cd /home/${{ secrets.EC2_USER }}/app
 
-            # Create .env file from secrets
-            echo "MONGO_URI=${{ secrets.MONGO_URI }}" > .env
-            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
-            echo "CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}" >> .env
-            echo "CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}" >> .env
-            echo "CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}" >> .env
-            echo "GOOGLE_API_KEY=${{ secrets.GOOGLE_API_KEY }}" >> .env
-            echo "CLIENT_URL=${{ secrets.CLIENT_URL }}" >> .env
+            # Create .env file from the single ENV_FILE secret
+            echo "${{ secrets.ENV_FILE }}" > .env
 
             # Create production docker-compose.yml using images
             cat <<EOF > docker-compose.yml
-            version: '3.8'
             services:
               backend:
                 image: ${{ secrets.DOCKER_USERNAME }}/blogger-backend:latest
