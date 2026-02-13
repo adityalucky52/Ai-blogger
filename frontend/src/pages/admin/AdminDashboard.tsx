@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Users,
   FileText,
@@ -153,73 +154,63 @@ export default function AdminDashboard() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            Overview of your blog platform
+            Overview of your platform's performance
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" asChild>
+          <Button variant="outline" size="sm" asChild>
             <Link to="/admin/users">
               <Users className="h-4 w-4 mr-2" />
-              Manage Users
+              Users
             </Link>
           </Button>
-          <Button
-            className="bg-linear-to-r from-rose-600 to-orange-600"
-            asChild
-          >
+          <Button size="sm" asChild>
             <Link to="/admin/blogs">
               <FileText className="h-4 w-4 mr-2" />
-              Manage Blogs
+              Blogs
             </Link>
           </Button>
         </div>
       </div>
 
-      {/* Alerts */}
+      {/* Alerts - simplified */}
       {alerts.length > 0 && (
-        <div className="space-y-2">
+        <div className="grid gap-4 md:grid-cols-2">
           {alerts.map((alert, index) => (
             <div
               key={index}
-              className={`p-4 rounded-lg flex items-center gap-3 ${
+              className={`px-4 py-3 rounded-md text-sm font-medium flex items-center gap-3 border ${
                 alert.type === "warning"
-                  ? "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200"
-                  : "bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200"
+                  ? "bg-amber-50 text-amber-900 border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50"
+                  : "bg-blue-50 text-blue-900 border-blue-200 dark:bg-blue-950/20 dark:text-blue-400 dark:border-blue-900/50"
               }`}
             >
-              <AlertTriangle className="h-5 w-5" />
+              <AlertTriangle className="h-4 w-4 shrink-0" />
               <span>{alert.message}</span>
             </div>
           ))}
         </div>
       )}
 
-      {/* Stats Cards */}
+      {/* Stats Cards - cleaner look */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
-            <Card
-              key={stat.title}
-              className="border-0 shadow-md hover:shadow-lg transition-shadow"
-            >
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      {stat.title}
-                    </p>
-                    <p className="text-3xl font-bold mt-1">{stat.value}</p>
-                    <p className="text-xs text-green-600 mt-1">{stat.change}</p>
-                  </div>
-                  <div
-                    className={`h-12 w-12 rounded-xl bg-linear-to-br ${stat.color} flex items-center justify-center`}
-                  >
-                    <Icon className="h-6 w-6 text-white" />
-                  </div>
-                </div>
+            <Card key={stat.title} className="shadow-xs hover:shadow-sm transition-shadow">
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  {stat.title}
+                </CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stat.value}</div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  <span className="text-emerald-500 font-medium">{stat.change}</span>
+                </p>
               </CardContent>
             </Card>
           );
@@ -228,45 +219,38 @@ export default function AdminDashboard() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Recent Users */}
-        <Card className="border-0 shadow-md">
+        <Card className="shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <UserPlus className="h-5 w-5 text-blue-600" />
-                Recent Users
-              </CardTitle>
-              <CardDescription>Newly registered users</CardDescription>
+            <div className="space-y-1">
+              <CardTitle className="text-lg font-semibold">Recent Users</CardTitle>
+              <CardDescription>Latest registered members</CardDescription>
             </div>
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" className="h-8 text-xs" asChild>
               <Link to="/admin/users">
-                View All
-                <ArrowUpRight className="h-4 w-4 ml-1" />
+                View All <ArrowUpRight className="ml-1 h-3 w-3" />
               </Link>
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-6">
               {recentUsers.map((user) => (
-                <div
-                  key={user.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-linear-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-medium">
-                      {user.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="font-medium">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {user.email}
+                <div key={user.id} className="flex items-center justify-between group">
+                  <div className="flex items-center gap-4">
+                    <Avatar className="h-9 w-9 border">
+                      <AvatarFallback className="text-xs bg-muted">
+                        {user.name.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="space-y-1">
+                      <p className="text-sm font-medium leading-none group-hover:underline cursor-pointer">
+                        {user.name}
                       </p>
+                      <p className="text-xs text-muted-foreground">{user.email}</p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">{user.blogs} blogs</p>
-                    <p className="text-xs text-muted-foreground">
-                      {user.joinedAt}
-                    </p>
+                  <div className="text-right text-sm">
+                    <p className="font-medium">{user.blogs} blogs</p>
+                    <p className="text-xs text-muted-foreground">{user.joinedAt}</p>
                   </div>
                 </div>
               ))}
@@ -275,52 +259,45 @@ export default function AdminDashboard() {
         </Card>
 
         {/* Recent Blogs */}
-        <Card className="border-0 shadow-md">
+        <Card className="shadow-xs">
           <CardHeader className="flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-violet-600" />
-                Recent Blogs
-              </CardTitle>
-              <CardDescription>Latest blog posts</CardDescription>
+            <div className="space-y-1">
+              <CardTitle className="text-lg font-semibold">Recent Blogs</CardTitle>
+              <CardDescription>Latest published content</CardDescription>
             </div>
-            <Button variant="ghost" size="sm" asChild>
+            <Button variant="ghost" size="sm" className="h-8 text-xs" asChild>
               <Link to="/admin/blogs">
-                View All
-                <ArrowUpRight className="h-4 w-4 ml-1" />
+                View All <ArrowUpRight className="ml-1 h-3 w-3" />
               </Link>
             </Button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-6">
               {recentBlogs.map((blog) => (
-                <div
-                  key={blog.id}
-                  className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-medium truncate">{blog.title}</p>
-                      <Badge
-                        variant={
-                          blog.status === "published" ? "default" : "secondary"
-                        }
-                        className={
-                          blog.status === "published"
-                            ? "bg-green-500"
-                            : "bg-amber-500"
-                        }
+                <div key={blog.id} className="flex items-center justify-between group">
+                  <div className="space-y-1 min-w-0 max-w-[70%]">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium leading-none truncate group-hover:underline cursor-pointer">
+                        {blog.title}
+                      </p>
+                      <Badge 
+                        variant="secondary" 
+                        className={`text-[10px] px-1 py-0 h-4 font-normal ${
+                          blog.status === 'published' 
+                            ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20' 
+                            : 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20'
+                        }`}
                       >
                         {blog.status}
                       </Badge>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       by {blog.author}
                     </p>
                   </div>
-                  <div className="flex items-center gap-1 text-muted-foreground">
-                    <Eye className="h-4 w-4" />
-                    <span className="text-sm">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Eye className="h-3.5 w-3.5" />
+                    <span className="text-xs font-medium tabular-nums">
                       {blog.views.toLocaleString()}
                     </span>
                   </div>
