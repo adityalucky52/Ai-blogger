@@ -63,7 +63,7 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold">Email</h3>
                     <p className="text-muted-foreground">
-                      contact@techblog.com
+                      adityalucky52@gmail.com
                     </p>
                     <p className="text-sm text-muted-foreground">
                       We reply within 24 hours
@@ -78,7 +78,7 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold">Location</h3>
                     <p className="text-muted-foreground">
-                      Remote Team Worldwide
+                      Gorakhpur
                     </p>
                     <p className="text-sm text-muted-foreground">
                       Working across all timezones
