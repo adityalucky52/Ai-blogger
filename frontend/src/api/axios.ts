@@ -5,4 +5,21 @@ const api = axios.create({
   withCredentials: true,
 });
 
+// Add a request interceptor to attach the token
+api.interceptors.request.use(
+  (config) => {
+    const stored = localStorage.getItem("auth-storage");
+    const state = stored ? JSON.parse(stored)?.state : null;
+    const token = state?.token;
+
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export default api;
