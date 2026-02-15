@@ -46,11 +46,13 @@ export default function BlogPage() {
     <article className="min-h-screen">
       {/* Hero Image */}
       <div className="relative h-[50vh] min-h-[400px] overflow-hidden">
-        <img
-          src={blogData.image}
-          alt={blogData.title}
-          className="w-full h-full object-cover"
-        />
+        {blogData.image && (
+          <img
+            src={blogData.image}
+            alt={blogData.title}
+            className="w-full h-full object-cover"
+          />
+        )}
         <div className="absolute inset-0 bg-linear-to-t from-background via-background/50 to-transparent" />
 
         {/* Back button */}
@@ -191,7 +193,10 @@ export default function BlogPage() {
                   className="group flex gap-4 p-4 rounded-xl bg-card border hover:shadow-lg transition-all"
                 >
                   <img
-                    src={blog.image}
+                    src={
+                      blog.image ||
+                      "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=800&h=400&fit=crop"
+                    }
                     alt={blog.title}
                     className="w-24 h-24 rounded-lg object-cover"
                   />
