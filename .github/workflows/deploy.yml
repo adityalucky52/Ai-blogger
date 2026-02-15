@@ -82,7 +82,12 @@ jobs:
                 restart: always
             EOF
 
-            # Pull and Restart
+            # Stop current containers
             sudo docker compose down || true
+
+            # FREE SPACE: Remove all unused images and containers
+            sudo docker system prune -af
+
+            # Pull and Restart
             sudo docker compose pull
             sudo docker compose up -d
