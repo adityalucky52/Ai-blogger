@@ -40,9 +40,9 @@ import ManageCategories from "./pages/admin/ManageCategories";
 export const AuthContext = createContext<any>(null);
 
 export const useAuth = () => {
-  const { user, login, register, logout, isAuthenticated, isLoading, error, updateProfile, updateAvatar } =
+  const { user, login, register, logout, isAuthenticated, isLoading, error, clearError, updateProfile, updateAvatar } =
     useAuthStore();
-  return { user, login, register, logout, isAuthenticated, isLoading, error, updateProfile, updateAvatar };
+  return { user, login, register, logout, isAuthenticated, isLoading, error, clearError, updateProfile, updateAvatar };
 };
 
 function App() {

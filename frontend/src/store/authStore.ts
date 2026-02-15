@@ -19,6 +19,7 @@ interface AuthState {
   token: string | null;
   error: string | null;
   isLoading: boolean;
+  clearError: () => void;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
@@ -34,6 +35,7 @@ const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
       token: null,
       error: null,
+      clearError: () => set({ error: null }),
       isLoading: false,
 
       login: async (email, password) => {

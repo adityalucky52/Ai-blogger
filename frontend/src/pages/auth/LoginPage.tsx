@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../App";
 import { Button } from "@/components/ui/button";
@@ -12,8 +12,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-  const { login, error, isLoading } = useAuth();
+  const { login, error, isLoading, clearError } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../App";
 import { Button } from "@/components/ui/button";
@@ -26,8 +26,12 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [agreeTerms, setAgreeTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const { register } = useAuth();
+  const { register, clearError } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
