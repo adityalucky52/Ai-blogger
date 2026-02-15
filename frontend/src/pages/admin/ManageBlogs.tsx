@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,113 +15,117 @@ import {
   Search,
   MoreHorizontal,
   Eye,
-  Edit,
   Trash2,
-  ExternalLink,
   Filter,
   FileText,
   Clock,
   CheckCircle,
   XCircle,
+  Loader2,
 } from "lucide-react";
+import api from "../../api/axios";
 
 interface AdminBlog {
-  id: number;
+  _id: string;
   title: string;
-  author: string;
-  authorEmail: string;
+  author: {
+    name: string;
+    email: string;
+  };
   status: string;
   category: string;
   views: number;
   createdAt: string;
+  slug: string;
 }
 
-// Mock blogs data
-const mockBlogs: AdminBlog[] = [
-  {
-    id: 1,
-    title: "The Future of AI in Content Creation",
-    author: "John Doe",
-    authorEmail: "john@example.com",
-    status: "published",
-    category: "Technology",
-    views: 2340,
-    createdAt: "2026-02-01",
-  },
-  {
-    id: 2,
-    title: "Building Scalable Web Applications",
-    author: "Sarah Smith",
-    authorEmail: "sarah@example.com",
-    status: "published",
-    category: "Development",
-    views: 1820,
-    createdAt: "2026-01-28",
-  },
-  {
-    id: 3,
-    title: "Pending Review Blog Post",
-    author: "Mike Johnson",
-    authorEmail: "mike@example.com",
-    status: "pending",
-    category: "Marketing",
-    views: 0,
-    createdAt: "2026-02-02",
-  },
-  {
-    id: 4,
-    title: "Introduction to Machine Learning",
-    author: "Emily Brown",
-    authorEmail: "emily@example.com",
-    status: "published",
-    category: "Technology",
-    views: 3200,
-    createdAt: "2026-01-15",
-  },
-  {
-    id: 5,
-    title: "Draft Blog About Travel",
-    author: "Alex Turner",
-    authorEmail: "alex@example.com",
-    status: "draft",
-    category: "Travel",
-    views: 0,
-    createdAt: "2026-01-25",
-  },
-];
+// Strip HTML tags from text (e.g. titles saved with <p> tags from editor)
+const stripHtml = (html: string) => {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
+};
 
 export default function ManageBlogs() {
+  const [blogs, setBlogs] = useState<AdminBlog[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
-  const filteredBlogs = mockBlogs.filter((blog) => {
+  useEffect(() => {
+    fetchBlogs();
+  }, []);
+
+  const fetchBlogs = async () => {
+    try {
+      setLoading(true);
+      const { data } = await api.get("/admin/blogs");
+      setBlogs(data);
+    } catch (error) {
+      console.error("Failed to fetch blogs:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateStatus = async (id: string, newStatus: string) => {
+    try {
+      const { data } = await api.put(`/admin/blogs/${id}`, { status: newStatus });
+      setBlogs(blogs.map(blog => blog._id === id ? { ...blog, status: data.status } : blog));
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      alert("Failed to update blog status");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Are you sure you want to delete this blog?")) return;
+    
+    try {
+      await api.delete(`/admin/blogs/${id}`);
+      setBlogs(blogs.filter(blog => blog._id !== id));
+    } catch (error) {
+      console.error("Failed to delete blog:", error);
+      alert("Failed to delete blog");
+    }
+  };
+
+  const filteredBlogs = blogs.filter((blog) => {
     const matchesSearch =
       blog.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      blog.author.toLowerCase().includes(searchQuery.toLowerCase());
+      (blog.author?.name || "").toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus =
       statusFilter === "all" || blog.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
   const stats = {
-    total: mockBlogs.length,
-    published: mockBlogs.filter((b) => b.status === "published").length,
-    pending: mockBlogs.filter((b) => b.status === "pending").length,
-    draft: mockBlogs.filter((b) => b.status === "draft").length,
+    total: blogs.length,
+    published: blogs.filter((b) => b.status === "published").length,
+    pending: blogs.filter((b) => b.status === "pending").length, // Assuming 'pending' exists
+    draft: blogs.filter((b) => b.status === "draft").length,
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "published":
-        return "bg-green-500";
+        return "bg-foreground text-background";
       case "pending":
-        return "bg-amber-500";
+        return "bg-muted-foreground/20 text-foreground border border-border";
       case "draft":
-        return "bg-gray-500";
+        return "bg-muted text-muted-foreground border border-border";
       default:
-        return "bg-gray-500";
+        return "bg-muted text-muted-foreground";
     }
   };
+
+  if (loading) {
+     return (
+       <div className="flex justify-center items-center h-96">
+         <Loader2 className="h-8 w-8 animate-spin text-primary" />
+       </div>
+     );
+   }
 
   return (
     <div className="space-y-6">
@@ -245,7 +249,6 @@ export default function ManageBlogs() {
                 <tr>
                   <th className="text-left p-4 font-medium">Blog</th>
                   <th className="text-left p-4 font-medium">Author</th>
-                  <th className="text-left p-4 font-medium">Category</th>
                   <th className="text-left p-4 font-medium">Status</th>
                   <th className="text-left p-4 font-medium">Views</th>
                   <th className="text-left p-4 font-medium">Created</th>
@@ -253,26 +256,30 @@ export default function ManageBlogs() {
                 </tr>
               </thead>
               <tbody>
-                {filteredBlogs.map((blog) => (
+                {filteredBlogs.length === 0 ? (
+                    <tr>
+                        <td colSpan={6} className="text-center p-8 text-muted-foreground">
+                            No blogs found.
+                        </td>
+                    </tr>
+                ) : (
+                filteredBlogs.map((blog) => (
                   <tr
-                    key={blog.id}
+                    key={blog._id}
                     className="border-t hover:bg-muted/30 transition-colors"
                   >
                     <td className="p-4">
-                      <p className="font-medium line-clamp-1 max-w-xs">
-                        {blog.title}
+                      <p className="font-medium line-clamp-1 max-w-xs" title={stripHtml(blog.title)}>
+                        {stripHtml(blog.title)}
                       </p>
                     </td>
                     <td className="p-4">
                       <div>
-                        <p className="font-medium">{blog.author}</p>
+                        <p className="font-medium">{blog.author?.name || "Unknown"}</p>
                         <p className="text-sm text-muted-foreground">
-                          {blog.authorEmail}
+                          {blog.author?.email}
                         </p>
                       </div>
-                    </td>
-                    <td className="p-4">
-                      <Badge variant="outline">{blog.category}</Badge>
                     </td>
                     <td className="p-4">
                       <Badge className={getStatusColor(blog.status)}>
@@ -286,7 +293,7 @@ export default function ManageBlogs() {
                       </div>
                     </td>
                     <td className="p-4 text-muted-foreground">
-                      {blog.createdAt}
+                      {new Date(blog.createdAt).toLocaleDateString()}
                     </td>
                     <td className="p-4 text-right">
                       <DropdownMenu>
@@ -295,36 +302,33 @@ export default function ManageBlogs() {
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Eye className="h-4 w-4 mr-2" />
-                            Preview
+                          <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link to={`/blog/${blog.slug}`}>
+                                <Eye className="h-4 w-4 mr-2" />
+                                Preview
+                            </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Edit className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          {blog.status === "published" && (
-                            <DropdownMenuItem>
-                              <ExternalLink className="h-4 w-4 mr-2" />
-                              View Live
+                          
+                          {blog.status === "published" ? (
+                            <DropdownMenuItem onClick={() => handleUpdateStatus(blog._id, "draft")}>
+                              <XCircle className="h-4 w-4 mr-2 text-amber-500" />
+                              Unpublish (Draft)
+                            </DropdownMenuItem>
+                          ) : (
+                            <DropdownMenuItem onClick={() => handleUpdateStatus(blog._id, "published")}>
+                              <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                              Publish
                             </DropdownMenuItem>
                           )}
-                          {blog.status === "pending" && (
-                            <>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-green-600">
-                                <CheckCircle className="h-4 w-4 mr-2" />
-                                Approve
-                              </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">
-                                <XCircle className="h-4 w-4 mr-2" />
-                                Reject
-                              </DropdownMenuItem>
-                            </>
-                          )}
+                          
+                          {/* Add Approve/Reject logic if 'pending' status is strictly used */}
+                          
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-600">
+                          <DropdownMenuItem 
+                            className="text-red-600 focus:text-red-600"
+                            onClick={() => handleDelete(blog._id)}
+                          >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
                           </DropdownMenuItem>
@@ -332,7 +336,7 @@ export default function ManageBlogs() {
                       </DropdownMenu>
                     </td>
                   </tr>
-                ))}
+                )))}
               </tbody>
             </table>
           </div>

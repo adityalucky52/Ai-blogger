@@ -7,6 +7,7 @@ export interface IUser extends Document {
   password: string;
   avatar: string;
   role: "user" | "admin";
+  status: "active" | "inactive" | "suspended";
   bio: string;
   matchPassword: (enteredPassword: string) => Promise<boolean>;
   createdAt: Date;
@@ -38,6 +39,11 @@ const userSchema = new mongoose.Schema<IUser>(
       type: String,
       enum: ["user", "admin"],
       default: "user",
+    },
+    status: {
+      type: String,
+      enum: ["active", "inactive", "suspended"],
+      default: "active",
     },
     bio: {
       type: String,

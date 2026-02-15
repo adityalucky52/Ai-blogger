@@ -12,7 +12,7 @@ export interface IBlog extends Document {
   readTime: string;
   views: number;
   featured: boolean;
-  status: "draft" | "published";
+  status: "draft" | "published" | "pending";
   likes: mongoose.Types.ObjectId[];
   tags: string[];
   createdAt: Date;
@@ -69,7 +69,7 @@ const blogSchema = new mongoose.Schema<IBlog>(
     },
     status: {
       type: String,
-      enum: ["draft", "published"],
+      enum: ["draft", "published", "pending"],
       default: "published",
     },
     likes: [

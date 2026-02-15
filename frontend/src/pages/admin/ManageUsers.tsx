@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,74 +32,24 @@ import {
   Filter,
   Users,
   UserPlus,
+  Loader2,
 } from "lucide-react";
+import api from "../../api/axios";
 
 interface AdminUser {
-  id: number;
+  _id: string;
   name: string;
   email: string;
   role: string;
   status: string;
   blogs: number;
-  joinedAt: string;
+  createdAt: string;
   avatar: string;
 }
 
-// Mock users data
-const mockUsers: AdminUser[] = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    role: "user",
-    status: "active",
-    blogs: 12,
-    joinedAt: "2025-12-15",
-    avatar: "",
-  },
-  {
-    id: 2,
-    name: "Sarah Smith",
-    email: "sarah@example.com",
-    role: "user",
-    status: "active",
-    blogs: 8,
-    joinedAt: "2025-12-20",
-    avatar: "",
-  },
-  {
-    id: 3,
-    name: "Mike Johnson",
-    email: "mike@example.com",
-    role: "admin",
-    status: "active",
-    blogs: 25,
-    joinedAt: "2025-11-10",
-    avatar: "",
-  },
-  {
-    id: 4,
-    name: "Emily Brown",
-    email: "emily@example.com",
-    role: "user",
-    status: "inactive",
-    blogs: 3,
-    joinedAt: "2026-01-05",
-    avatar: "",
-  },
-  {
-    id: 5,
-    name: "Alex Turner",
-    email: "alex@example.com",
-    role: "user",
-    status: "active",
-    blogs: 15,
-    joinedAt: "2026-01-10",
-    avatar: "",
-  },
-];
-
 export default function ManageUsers() {
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -111,22 +61,71 @@ export default function ManageUsers() {
     user: null,
   });
 
-  const filteredUsers = mockUsers.filter((user) => {
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const { data } = await api.get("/admin/users");
+      setUsers(data);
+    } catch (error) {
+      console.error("Failed to fetch users:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleUpdateUserStatus = async (userId: string, newStatus: string) => {
+    try {
+      const { data } = await api.put(`/admin/users/${userId}`, { status: newStatus });
+      setUsers(users.map(user => user._id === userId ? { ...user, status: data.status } : user));
+    } catch (error) {
+      console.error("Failed to update user status:", error);
+      alert("Failed to update user status");
+    }
+  };
+
+
+
+  const handleDeleteUser = async () => {
+    if (!deleteDialog.user) return;
+    
+    try {
+      await api.delete(`/admin/users/${deleteDialog.user._id}`);
+      setUsers(users.filter(user => user._id !== deleteDialog.user!._id));
+      setDeleteDialog({ open: false, user: null });
+    } catch (error) {
+      console.error("Failed to delete user:", error);
+      alert("Failed to delete user");
+    }
+  };
+
+  const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = roleFilter === "all" || user.role === roleFilter;
     const matchesStatus =
-      statusFilter === "all" || user.status === statusFilter;
+      statusFilter === "all" || (user.status || "active") === statusFilter; // Default to active if undefined
     return matchesSearch && matchesRole && matchesStatus;
   });
 
   const stats = {
-    total: mockUsers.length,
-    active: mockUsers.filter((u) => u.status === "active").length,
-    admins: mockUsers.filter((u) => u.role === "admin").length,
-    inactive: mockUsers.filter((u) => u.status === "inactive").length,
+    total: users.length,
+    active: users.filter((u) => (u.status || "active") === "active").length,
+    admins: users.filter((u) => u.role === "admin").length,
+    inactive: users.filter((u) => u.status === "inactive" || u.status === "suspended").length,
   };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -138,10 +137,10 @@ export default function ManageUsers() {
             View and manage all registered users
           </p>
         </div>
-        <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
+        {/* <Button className="bg-primary text-primary-foreground hover:bg-primary/90">
           <UserPlus className="h-4 w-4 mr-2" />
           Add User
-        </Button>
+        </Button> */}
       </div>
 
       {/* Stats */}
@@ -249,6 +248,9 @@ export default function ManageUsers() {
                   <DropdownMenuItem onClick={() => setStatusFilter("inactive")}>
                     Inactive
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setStatusFilter("suspended")}>
+                    Suspended
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -272,103 +274,104 @@ export default function ManageUsers() {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((user) => (
-                  <tr
-                    key={user.id}
-                    className="border-t hover:bg-muted/30 transition-colors"
-                  >
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <Avatar>
-                          <AvatarImage src={getAvatarUrl(user.avatar)} />
-                          <AvatarFallback className="bg-primary text-primary-foreground">
-                            {user.name.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium">{user.name}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {user.email}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4">
-                      <Badge
-                        variant={
-                          user.role === "admin" ? "default" : "secondary"
-                        }
-                      >
-                        {user.role === "admin" && (
-                          <Shield className="h-3 w-3 mr-1" />
-                        )}
-                        {user.role}
-                      </Badge>
-                    </td>
-                    <td className="p-4">
-                      <Badge
-                        variant="outline"
-                        className={
-                          user.status === "active"
-                            ? "border-primary text-foreground"
-                            : "border-secondary text-muted-foreground"
-                        }
-                      >
-                        {user.status}
-                      </Badge>
-                    </td>
-                    <td className="p-4">{user.blogs}</td>
-                    <td className="p-4 text-muted-foreground">
-                      {user.joinedAt}
-                    </td>
-                    <td className="p-4 text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Mail className="h-4 w-4 mr-2" />
-                            Send Email
-                          </DropdownMenuItem>
-                          {user.status === "active" ? (
-                            <DropdownMenuItem>
-                              <UserX className="h-4 w-4 mr-2" />
-                              Deactivate
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem>
-                              <UserCheck className="h-4 w-4 mr-2" />
-                              Activate
-                            </DropdownMenuItem>
-                          )}
-                          {user.role === "user" ? (
-                            <DropdownMenuItem>
-                              <Shield className="h-4 w-4 mr-2" />
-                              Make Admin
-                            </DropdownMenuItem>
-                          ) : (
-                            <DropdownMenuItem>
-                              <ShieldOff className="h-4 w-4 mr-2" />
-                              Remove Admin
-                            </DropdownMenuItem>
-                          )}
-                          <DropdownMenuSeparator />
-                          <DropdownMenuItem
-                            onClick={() =>
-                              setDeleteDialog({ open: true, user })
-                            }
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete User
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="text-center p-8 text-muted-foreground">
+                      No users found matching your criteria.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  filteredUsers.map((user) => (
+                    <tr
+                      key={user._id}
+                      className="border-t hover:bg-muted/30 transition-colors"
+                    >
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <Avatar>
+                            <AvatarImage src={user.avatar || getAvatarUrl(user.name)} />
+                            <AvatarFallback className="bg-primary text-primary-foreground">
+                              {user.name.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-medium">{user.name}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <Badge
+                          variant={
+                            user.role === "admin" ? "default" : "secondary"
+                          }
+                        >
+                          {user.role === "admin" && (
+                            <Shield className="h-3 w-3 mr-1" />
+                          )}
+                          {user.role}
+                        </Badge>
+                      </td>
+                      <td className="p-4">
+                        <Badge
+                          variant="outline"
+                          className={
+                            user.status === "active"
+                              ? "border-green-500 text-green-600"
+                              : user.status === "suspended" 
+                                ? "border-red-500 text-red-600"
+                                : "border-gray-400 text-gray-500"
+                          }
+                        >
+                          {user.status || "active"}
+                        </Badge>
+                      </td>
+                      <td className="p-4">{user.blogs}</td>
+                      <td className="p-4 text-muted-foreground">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="p-4 text-right">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {/* <DropdownMenuItem>
+                              <Mail className="h-4 w-4 mr-2" />
+                              Send Email
+                            </DropdownMenuItem> */}
+                            {user.status === "active" ? (
+                              <DropdownMenuItem onClick={() => handleUpdateUserStatus(user._id, "inactive")}>
+                                <UserX className="h-4 w-4 mr-2" />
+                                Deactivate
+                              </DropdownMenuItem>
+                            ) : (
+                              <DropdownMenuItem onClick={() => handleUpdateUserStatus(user._id, "active")}>
+                                <UserCheck className="h-4 w-4 mr-2" />
+                                Activate
+                              </DropdownMenuItem>
+                            )}
+
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              className="text-red-600 focus:text-red-600"
+                              onClick={() =>
+                                setDeleteDialog({ open: true, user })
+                              }
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete User
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -398,7 +401,7 @@ export default function ManageUsers() {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => setDeleteDialog({ open: false, user: null })}
+              onClick={handleDeleteUser}
             >
               Delete User
             </Button>
