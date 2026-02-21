@@ -1,7 +1,7 @@
 import express, { Request, Response, NextFunction } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import mongoose from "mongoose";
+import connectDB from "./database/db.js";
 import cookieParser from "cookie-parser";
 import bcrypt from "bcryptjs";
 import authRoutes from "./routes/authRoutes.js";
@@ -69,19 +69,7 @@ const setupAdmin = async () => {
 };
 
 // Database Connection
-const mongoUri = process.env.MONGO_URI;
-if (!mongoUri) {
-  console.error("❌ MONGO_URI is not defined in environment variables");
-  process.exit(1);
-}
-
-mongoose
-  .connect(mongoUri)
-  .then(async () => {
-    console.log("✅ MongoDB Connected");
-    await setupAdmin(); // Auto-fix admin roles on every startup
-  })
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
+connectDB().then(setupAdmin);
 
 // Routes
 app.use("/api/auth", authRoutes);

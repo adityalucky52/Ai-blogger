@@ -87,5 +87,13 @@ const blogSchema = new mongoose.Schema<IBlog>(
   { timestamps: true },
 );
 
+// Add indexes for optimizing read queries
+blogSchema.index({ createdAt: -1 });
+blogSchema.index({ status: 1 });
+blogSchema.index({ category: 1 });
+blogSchema.index({ author: 1 });
+// Add a text index for searching
+blogSchema.index({ title: "text", excerpt: "text", content: "text" });
+
 const Blog = mongoose.model<IBlog>("Blog", blogSchema);
 export default Blog;
