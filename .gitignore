@@ -44,3 +44,27 @@ AWS_DEPLOYMENT_FIX.md
 # Test Scripts
 test/
 backend/load-test.yml
+coverage/
+.nyc_output/
+*.results.xml
+
+# Caches and Tools
+.eslintcache
+.prettiercache
+.parcel-cache
+.cache/
+.vite/
+
+# Development Logs & Temporary files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# Sensitive Keys (Dev)
+*.pem
+*.key
+auth_token*
+
