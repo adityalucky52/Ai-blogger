@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,69 +24,110 @@ import {
   FolderTree,
   FileText,
   GripVertical,
+  Loader2,
 } from "lucide-react";
+import api from "../../api/axios";
 
 interface Category {
-  id: number;
+  _id: string;
   name: string;
   slug: string;
   blogs: number;
   color: string;
 }
 
-// Mock categories data
-const mockCategories: Category[] = [
-  {
-    id: 1,
-    name: "Technology",
-    slug: "technology",
-    blogs: 45,
-    color: "#000000",
-  },
-  { id: 2, name: "Lifestyle", slug: "lifestyle", blogs: 32, color: "#111111" },
-  { id: 3, name: "Travel", slug: "travel", blogs: 24, color: "#222222" },
-  { id: 4, name: "Business", slug: "business", blogs: 19, color: "#333333" },
-  { id: 5, name: "Marketing", slug: "marketing", blogs: 28, color: "#444444" },
-  {
-    id: 6,
-    name: "Development",
-    slug: "development",
-    blogs: 38,
-    color: "#555555",
-  },
-  { id: 7, name: "Writing", slug: "writing", blogs: 15, color: "#666666" },
-];
-
 export default function ManageCategories() {
-  const [categories, setCategories] = useState<Category[]>(mockCategories);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editCategory, setEditCategory] = useState<Category | null>(null);
+  
   const [newCategory, setNewCategory] = useState({
     name: "",
     color: "#3B82F6",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleAddCategory = () => {
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get("/categories");
+      setCategories(response.data);
+    } catch (error) {
+      console.error("Failed to fetch categories:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddCategory = async () => {
     if (!newCategory.name.trim()) return;
+    setIsSubmitting(true);
 
-    const category: Category = {
-      id: Date.now(),
-      name: newCategory.name,
-      slug: newCategory.name.toLowerCase().replace(/\s+/g, "-"),
-      blogs: 0,
-      color: newCategory.color,
-    };
-
-    setCategories([...categories, category]);
-    setNewCategory({ name: "", color: "#3B82F6" });
-    setShowAddDialog(false);
+    try {
+      const response = await api.post("/categories", newCategory);
+      // The API returns the created category without the 'blogs' virtual count property immediately populated from DB count (which is 0)
+      // but we can manually set it to 0 for UI consistency
+      const addedCategory = { ...response.data, blogs: 0 };
+      setCategories([addedCategory, ...categories]);
+      setNewCategory({ name: "", color: "#3B82F6" });
+      setShowAddDialog(false);
+    } catch (error) {
+      console.error("Failed to add category:", error);
+      alert("Failed to add category. It might already exist.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const handleDeleteCategory = (id: number) => {
-    setCategories(categories.filter((c) => c.id !== id));
+  const handleUpdateCategory = async () => {
+    if (!editCategory || !editCategory.name.trim()) return;
+    setIsSubmitting(true);
+
+    try {
+      const response = await api.put(`/categories/${editCategory._id}`, {
+        name: editCategory.name,
+        color: editCategory.color,
+      });
+      
+      setCategories(
+        categories.map((c) =>
+          c._id === editCategory._id ? { ...c, ...response.data } : c
+        )
+      );
+      setEditCategory(null);
+    } catch (error) {
+      console.error("Failed to update category:", error);
+      alert("Failed to update category.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const totalBlogs = categories.reduce((acc, cat) => acc + cat.blogs, 0);
+  const handleDeleteCategory = async (id: string) => {
+    if(!window.confirm("Are you sure you want to delete this category?")) return;
+    
+    try {
+      await api.delete(`/categories/${id}`);
+      setCategories(categories.filter((c) => c._id !== id));
+    } catch (error) {
+      console.error("Failed to delete category:", error);
+      alert("Failed to delete category.");
+    }
+  };
+
+  const totalBlogs = categories.reduce((acc, cat) => acc + (cat.blogs || 0), 0);
+
+  if (isLoading) {
+    return (
+      <div className="flex h-96 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -148,7 +189,7 @@ export default function ManageCategories() {
                   Avg per Category
                 </p>
                 <p className="text-2xl font-bold">
-                  {Math.round(totalBlogs / categories.length)}
+                  {categories.length > 0 ? Math.round(totalBlogs / categories.length) : 0}
                 </p>
               </div>
             </div>
@@ -163,9 +204,14 @@ export default function ManageCategories() {
         </CardHeader>
         <CardContent className="p-0">
           <div className="divide-y">
-            {categories.map((category) => (
+            {categories.length === 0 ? (
+              <div className="p-8 text-center text-muted-foreground">
+                No categories found. Create one to get started.
+              </div>
+            ) : (
+                categories.map((category) => (
               <div
-                key={category.id}
+                key={category._id}
                 className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors"
               >
                 <GripVertical className="h-5 w-5 text-muted-foreground cursor-move" />
@@ -184,7 +230,7 @@ export default function ManageCategories() {
                   </p>
                 </div>
 
-                <Badge variant="secondary">{category.blogs} blogs</Badge>
+                <Badge variant="secondary">{category.blogs || 0} blogs</Badge>
 
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -198,7 +244,8 @@ export default function ManageCategories() {
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => handleDeleteCategory(category.id)}
+                      onClick={() => handleDeleteCategory(category._id)}
+                      className="text-red-600 focus:text-red-600"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
@@ -206,7 +253,7 @@ export default function ManageCategories() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
-            ))}
+            )))}
           </div>
         </CardContent>
       </Card>
@@ -230,7 +277,7 @@ export default function ManageCategories() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Color</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {[
                   "#000000",
                   "#222222",
@@ -239,22 +286,34 @@ export default function ManageCategories() {
                   "#888888",
                   "#AAAAAA",
                   "#CCCCCC",
+                  "#EF4444",
+                  "#F97316",
+                  "#F59E0B",
+                  "#10B981",
+                  "#3B82F6",
+                  "#6366F1",
+                  "#8B5CF6",
+                  "#EC4899"
                 ].map((color) => (
                   <button
                     key={color}
                     className={`h-8 w-8 rounded-lg ${newCategory.color === color ? "ring-2 ring-offset-2 ring-gray-400" : ""}`}
                     style={{ backgroundColor: color }}
                     onClick={() => setNewCategory({ ...newCategory, color })}
+                    type="button"
                   />
                 ))}
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAddDialog(false)}>
+            <Button variant="outline" onClick={() => setShowAddDialog(false)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button onClick={handleAddCategory}>Add Category</Button>
+            <Button onClick={handleAddCategory} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Add Category
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -277,7 +336,7 @@ export default function ManageCategories() {
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Color</label>
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 {[
                   "#000000",
                   "#222222",
@@ -286,33 +345,32 @@ export default function ManageCategories() {
                   "#888888",
                   "#AAAAAA",
                   "#CCCCCC",
+                  "#EF4444",
+                  "#F97316",
+                  "#F59E0B",
+                  "#10B981",
+                  "#3B82F6",
+                  "#6366F1",
+                  "#8B5CF6",
+                  "#EC4899"
                 ].map((color) => (
                   <button
                     key={color}
                     className={`h-8 w-8 rounded-lg ${editCategory?.color === color ? "ring-2 ring-offset-2 ring-gray-400" : ""}`}
                     style={{ backgroundColor: color }}
                     onClick={() => setEditCategory((prev) => (prev ? { ...prev, color } : null))}
+                    type="button" // Prevent form submission if inside form
                   />
                 ))}
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditCategory(null)}>
+            <Button variant="outline" onClick={() => setEditCategory(null)} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button
-              onClick={() => {
-                if (editCategory) {
-                  setCategories(
-                    categories.map((c) =>
-                      c.id === editCategory.id ? editCategory : c,
-                    ),
-                  );
-                }
-                setEditCategory(null);
-              }}
-            >
+            <Button onClick={handleUpdateCategory} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
               Save Changes
             </Button>
           </DialogFooter>

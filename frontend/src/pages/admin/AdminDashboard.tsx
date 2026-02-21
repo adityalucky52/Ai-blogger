@@ -20,6 +20,9 @@ import {
   Activity,
 } from "lucide-react";
 
+import { useEffect, useState } from "react";
+import api from "../../api/axios";
+
 interface Stat {
   title: string;
   value: string;
@@ -29,7 +32,7 @@ interface Stat {
 }
 
 interface RecentUser {
-  id: number;
+  id: string; // Changed to string for _id
   name: string;
   email: string;
   blogs: number;
@@ -37,7 +40,7 @@ interface RecentUser {
 }
 
 interface RecentBlog {
-  id: number;
+  id: string; // Changed to string for _id
   title: string;
   author: string;
   status: string;
@@ -49,106 +52,93 @@ interface Alert {
   message: string;
 }
 
-// Mock data
-const stats: Stat[] = [
-  {
-    title: "Total Users",
-    value: "1,234",
-    change: "+12 this week",
-    icon: Users,
-    color: "from-blue-500 to-cyan-500",
-  },
-  {
-    title: "Total Blogs",
-    value: "3,456",
-    change: "+45 this week",
-    icon: FileText,
-    color: "from-violet-500 to-indigo-500",
-  },
-  {
-    title: "Total Views",
-    value: "125K",
-    change: "+18% this month",
-    icon: Eye,
-    color: "from-green-500 to-emerald-500",
-  },
-  {
-    title: "Active Users",
-    value: "892",
-    change: "+5% from yesterday",
-    icon: Activity,
-    color: "from-orange-500 to-red-500",
-  },
-];
-
-const recentUsers: RecentUser[] = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    blogs: 12,
-    joinedAt: "2 hours ago",
-  },
-  {
-    id: 2,
-    name: "Sarah Smith",
-    email: "sarah@example.com",
-    blogs: 8,
-    joinedAt: "5 hours ago",
-  },
-  {
-    id: 3,
-    name: "Mike Johnson",
-    email: "mike@example.com",
-    blogs: 3,
-    joinedAt: "Yesterday",
-  },
-  {
-    id: 4,
-    name: "Emily Brown",
-    email: "emily@example.com",
-    blogs: 0,
-    joinedAt: "2 days ago",
-  },
-];
-
-const recentBlogs: RecentBlog[] = [
-  {
-    id: 1,
-    title: "Getting Started with AI",
-    author: "John Doe",
-    status: "published",
-    views: 1234,
-  },
-  {
-    id: 2,
-    title: "Web Development Tips",
-    author: "Sarah Smith",
-    status: "published",
-    views: 856,
-  },
-  {
-    id: 3,
-    title: "The Future of Technology",
-    author: "Mike Johnson",
-    status: "pending",
-    views: 0,
-  },
-  {
-    id: 4,
-    title: "Productivity Hacks",
-    author: "Emily Brown",
-    status: "published",
-    views: 2341,
-  },
-];
-
-const alerts: Alert[] = [
-  { type: "warning", message: "3 blogs pending review" },
-  { type: "info", message: "15 new users this week" },
-];
+// Strip HTML tags from text
+const stripHtml = (html: string) => {
+  const tmp = document.createElement("div");
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || "";
+};
 
 export default function AdminDashboard() {
+  const [stats, setStats] = useState<Stat[]>([]);
+  const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
+  const [recentBlogs, setRecentBlogs] = useState<RecentBlog[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        const response = await api.get("/admin/stats");
+        const data = response.data;
+
+        // Transform stats
+        const newStats: Stat[] = [
+          {
+            title: "Total Users",
+            value: data.stats.totalUsers.toLocaleString(),
+            change: `+${data.stats.newUsers} this week`,
+            icon: Users,
+            color: "from-blue-500 to-cyan-500",
+          },
+          {
+            title: "Total Blogs",
+            value: data.stats.totalBlogs.toLocaleString(),
+            change: `+${data.stats.newBlogs} this week`,
+            icon: FileText,
+            color: "from-violet-500 to-indigo-500",
+          },
+          {
+            title: "Total Views",
+            value: data.stats.totalViews.toLocaleString(),
+            change: "+18% this month", // Placeholder
+            icon: Eye,
+            color: "from-green-500 to-emerald-500",
+          },
+          {
+            title: "Active Users",
+            value: data.stats.newUsers.toString(), // Proxy
+            change: "+5% from yesterday", // Placeholder
+            icon: Activity,
+            color: "from-orange-500 to-red-500",
+          },
+        ];
+
+        // Transform Recent Users
+        const newRecentUsers: RecentUser[] = data.recentUsers.map((user: any) => ({
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          blogs: user.blogs || 0,
+          joinedAt: new Date(user.createdAt).toLocaleDateString(),
+        }));
+
+        // Transform Recent Blogs
+        const newRecentBlogs: RecentBlog[] = data.recentBlogs.map((blog: any) => ({
+          id: blog._id,
+          title: stripHtml(blog.title),
+          author: blog.author ? blog.author.name : "Unknown",
+          status: blog.status,
+          views: blog.views,
+        }));
+
+        setStats(newStats);
+        setRecentUsers(newRecentUsers);
+        setRecentBlogs(newRecentBlogs);
+        setAlerts(data.alerts);
+      } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  if (loading) {
+     return <div className="p-8 text-center">Loading dashboard stats...</div>;
+  }
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -208,9 +198,6 @@ export default function AdminDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stat.value}</div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  <span className="text-emerald-500 font-medium">{stat.change}</span>
-                </p>
               </CardContent>
             </Card>
           );
@@ -284,8 +271,8 @@ export default function AdminDashboard() {
                         variant="secondary" 
                         className={`text-[10px] px-1 py-0 h-4 font-normal ${
                           blog.status === 'published' 
-                            ? 'bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20' 
-                            : 'bg-amber-500/10 text-amber-600 hover:bg-amber-500/20'
+                            ? 'bg-foreground text-background hover:bg-foreground/90' 
+                            : 'bg-muted text-muted-foreground border border-border hover:bg-muted/80'
                         }`}
                       >
                         {blog.status}

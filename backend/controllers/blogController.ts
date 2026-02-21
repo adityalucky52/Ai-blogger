@@ -33,7 +33,8 @@ export const getBlogs = async (req: Request, res: Response) => {
 
     const blogs = await Blog.find(query)
       .populate("author", "name avatar")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
 
     res.json(blogs);
   } catch (error: any) {

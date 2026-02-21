@@ -128,40 +128,25 @@ export default function AboutPage() {
       <section className="py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold mb-4">Meet Our Team</h2>
+            <h2 className="text-3xl font-bold mb-4">Meet the Creator</h2>
             <p className="text-muted-foreground max-w-2xl mx-auto">
-              The passionate people behind TechBlog.
+              Built with passion and dedication.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 max-w-3xl mx-auto">
-            <Card className="p-6 text-center">
-              <div className="h-20 w-20 rounded-full bg-foreground flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-background">AK</span>
+          <div className="flex justify-center">
+            <Card className="p-8 text-center max-w-sm w-full hover:shadow-lg transition-shadow">
+              <div className="h-24 w-24 rounded-full bg-foreground flex items-center justify-center mx-auto mb-6">
+                <span className="text-3xl font-bold text-background">AL</span>
               </div>
-              <h3 className="font-semibold">Aditya Kumar</h3>
-              <p className="text-sm text-muted-foreground">
-                Founder & Lead Developer
-              </p>
-            </Card>
-
-            <Card className="p-6 text-center">
-              <div className="h-20 w-20 rounded-full bg-foreground flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-background">TM</span>
-              </div>
-              <h3 className="font-semibold">Tech Team</h3>
-              <p className="text-sm text-muted-foreground">
-                Content & Engineering
-              </p>
-            </Card>
-
-            <Card className="p-6 text-center">
-              <div className="h-20 w-20 rounded-full bg-foreground flex items-center justify-center mx-auto mb-4">
-                <span className="text-2xl font-bold text-background">CM</span>
-              </div>
-              <h3 className="font-semibold">Community</h3>
-              <p className="text-sm text-muted-foreground">
-                Contributors Worldwide
+              <h3 className="text-xl font-bold mb-2">Aditya Lucky</h3>
+              <Badge variant="secondary" className="mb-4">
+                Backend Developer & Creator
+              </Badge>
+              <p className="text-muted-foreground">
+                I created this project to share knowledge and build a platform for
+                developers. Specializing in robust backend systems and scalable
+                architecture.
               </p>
             </Card>
           </div>

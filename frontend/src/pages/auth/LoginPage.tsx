@@ -1,15 +1,18 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../App";
+import useAuthStore from "../../store/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Feather, Mail, Lock, Eye, EyeOff, ArrowLeft, Sparkles, PenTool, BarChart3 } from "lucide-react";
 
+
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isAdminMode, setIsAdminMode] = useState(false); // Toggle state
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const { login, error, isLoading, clearError } = useAuth();
@@ -17,14 +20,19 @@ export default function LoginPage() {
 
   useEffect(() => {
     clearError();
-  }, [clearError]);
+  }, [clearError, isAdminMode]); // Clear error when toggling
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     const success = await login(email, password);
     if (success) {
-      navigate("/dashboard");
+      // Redirect admin to admin dashboard, regular users to blog dashboard
+      const userData = useAuthStore.getState().user;
+      if (userData?.role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/dashboard");
+      }
     }
   };
 
@@ -52,9 +60,23 @@ export default function LoginPage() {
             </div>
 
             {/* Header */}
-            <h1 className="text-3xl font-bold tracking-tight">Welcome back</h1>
+            <div className="flex justify-between items-center mb-2">
+                <h1 className="text-3xl font-bold tracking-tight">
+                    {isAdminMode ? "Admin Portal" : "Welcome back"}
+                </h1>
+                <div className="flex items-center space-x-2">
+                    <Label htmlFor="admin-mode" className="text-xs text-muted-foreground">Admin</Label>
+                    <Checkbox 
+                        id="admin-mode" 
+                        checked={isAdminMode}
+                        onCheckedChange={(c) => setIsAdminMode(!!c)}
+                    />
+                </div>
+            </div>
             <p className="mt-2 text-muted-foreground">
-              Enter your credentials to access your account
+              {isAdminMode 
+                ? "Enter system credentials to access admin dashboard" 
+                : "Enter your credentials to access your account"}
             </p>
           </div>
 

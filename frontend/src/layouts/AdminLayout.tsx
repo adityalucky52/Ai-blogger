@@ -133,26 +133,7 @@ function AdminSidebar({ className = "" }: { className?: string }) {
           );
         })}
 
-        <div className="pt-4 pb-2">
-          <p className="px-3 text-xs font-medium text-muted-foreground mb-2">
-            Quick Access
-          </p>
-        </div>
-        
-        <Link
-          to="/dashboard"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        >
-          <Sparkles className="h-4 w-4" />
-          User Dashboard
-        </Link>
-        <Link
-          to="/"
-          className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-        >
-          <Home className="h-4 w-4" />
-          View Blog
-        </Link>
+
       </nav>
 
       {/* User Section */}
@@ -308,18 +289,7 @@ export default function AdminLayout() {
                   </div>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <Link to="/">
-                    <Home className="mr-2 h-4 w-4" />
-                    View Blog
-                  </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <Link to="/dashboard">
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    User Dashboard
-                  </Link>
-                </DropdownMenuItem>
+
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />

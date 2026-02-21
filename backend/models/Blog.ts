@@ -12,7 +12,7 @@ export interface IBlog extends Document {
   readTime: string;
   views: number;
   featured: boolean;
-  status: "draft" | "published";
+  status: "draft" | "published" | "pending";
   likes: mongoose.Types.ObjectId[];
   tags: string[];
   createdAt: Date;
@@ -69,7 +69,7 @@ const blogSchema = new mongoose.Schema<IBlog>(
     },
     status: {
       type: String,
-      enum: ["draft", "published"],
+      enum: ["draft", "published", "pending"],
       default: "published",
     },
     likes: [
@@ -86,6 +86,14 @@ const blogSchema = new mongoose.Schema<IBlog>(
   },
   { timestamps: true },
 );
+
+// Add indexes for optimizing read queries
+blogSchema.index({ createdAt: -1 });
+blogSchema.index({ status: 1 });
+blogSchema.index({ category: 1 });
+blogSchema.index({ author: 1 });
+// Add a text index for searching
+blogSchema.index({ title: "text", excerpt: "text", content: "text" });
 
 const Blog = mongoose.model<IBlog>("Blog", blogSchema);
 export default Blog;

@@ -1,5 +1,6 @@
 import User, { IUser } from "../models/User.js";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import { Request, Response } from "express";
 import cloudinary from "../utils/cloudinary.js";
 
@@ -55,9 +56,56 @@ export const register = async (req: Request, res: Response) => {
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
 // @access  Public
+// @desc    Auth user & get token
+// @route   POST /api/auth/login
+// @access  Public
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
+
+    // Check for Fixed Admin Credentials
+    if (
+      process.env.ADMIN_EMAIL &&
+      process.env.ADMIN_PASSWORD &&
+      email === process.env.ADMIN_EMAIL &&
+      password === process.env.ADMIN_PASSWORD
+    ) {
+      // Find valid admin user or create if not exists (to ensure DB consistency for foreign keys)
+      let adminUser = await User.findOne({ email: process.env.ADMIN_EMAIL });
+
+      if (!adminUser) {
+        // Create the admin user on the fly if it doesn't exist
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, salt);
+        
+        adminUser = await User.create({
+          name: "Admin",
+          email: process.env.ADMIN_EMAIL,
+          password: hashedPassword, // Store hashed version
+          role: "admin",
+          status: "active",
+          bio: "System Administrator"
+        });
+      } else {
+        // Ensure role is admin if it exists
+        if (adminUser.role !== 'admin') {
+            adminUser.role = 'admin';
+            await adminUser.save();
+        }
+      }
+
+      return res.json({
+        _id: adminUser._id,
+        name: adminUser.name,
+        email: adminUser.email,
+        role: adminUser.role,
+        avatar: adminUser.avatar,
+        bio: adminUser.bio,
+        createdAt: adminUser.createdAt,
+        updatedAt: adminUser.updatedAt,
+        token: generateToken(adminUser._id),
+      });
+    }
 
     const user = await User.findOne({ email });
 

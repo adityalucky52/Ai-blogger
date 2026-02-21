@@ -30,9 +30,16 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 };
 
 export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  if (req.user && req.user.role === "admin") {
+  // Strict check: User must be admin AND their email must match the env variable
+  if (
+    req.user && 
+    req.user.role === "admin" && 
+    req.user.email === process.env.ADMIN_EMAIL
+  ) {
     next();
   } else {
-    res.status(401).json({ message: "Not authorized as an admin" });
+    res.status(401).json({ 
+      message: "Not authorized as admin. Access restricted to system administrator." 
+    });
   }
 };
