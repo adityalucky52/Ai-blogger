@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { useEffect } from "react";
 import { Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "./context/ThemeContext";
 import useAuthStore from "./store/authStore";
@@ -33,17 +33,10 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import ManageUsers from "./pages/admin/ManageUsers";
 import ManageBlogs from "./pages/admin/ManageBlogs";
 import ManageCategories from "./pages/admin/ManageCategories";
+import AdminLoginPage from "./pages/admin/AdminLoginPage";
+import AdminRegisterPage from "./pages/admin/AdminRegisterPage";
 
-// Auth Context - keeping for compatibility but logic moved to Zustand
-// Auth Context - keeping for compatibility but logic moved to Zustand
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const AuthContext = createContext<any>(null);
 
-export const useAuth = () => {
-  const { user, login, register, logout, isAuthenticated, isLoading, error, clearError, updateProfile, updateAvatar } =
-    useAuthStore();
-  return { user, login, register, logout, isAuthenticated, isLoading, error, clearError, updateProfile, updateAvatar };
-};
 
 function App() {
   const initializeAuth = useAuthStore((state) => state.initializeAuth);
@@ -54,8 +47,7 @@ function App() {
 
   return (
     <ThemeProvider defaultTheme="light">
-      <AuthContext.Provider value={{}}>
-        <Routes>
+      <Routes>
           {/* Public Routes */}
           <Route element={<PublicLayout />}>
             <Route path="/" element={<HomePage />} />
@@ -68,6 +60,10 @@ function App() {
           {/* Auth Routes */}
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
+
+          {/* Hidden Admin Entry Routes */}
+          <Route path="/secure-admin-login" element={<AdminLoginPage />} />
+          <Route path="/secure-admin-register" element={<AdminRegisterPage />} />
 
           {/* Dashboard Routes (Protected) */}
           <Route path="/dashboard" element={<DashboardLayout />}>
@@ -88,7 +84,6 @@ function App() {
             <Route path="categories" element={<ManageCategories />} />
           </Route>
         </Routes>
-      </AuthContext.Provider>
     </ThemeProvider>
   );
 }

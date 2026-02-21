@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import api from "../api/axios";
 
 export interface User {
-  _id: string;
+  id: string;
   name: string;
   email: string;
   role: "user" | "admin";
@@ -22,6 +22,7 @@ interface AuthState {
   clearError: () => void;
   login: (email: string, password: string) => Promise<boolean>;
   register: (name: string, email: string, password: string) => Promise<boolean>;
+  adminRegister: (name: string, email: string, password: string, secret: string) => Promise<boolean>;
   logout: () => void;
   initializeAuth: () => void;
   updateProfile: (data: { name?: string; bio?: string }) => Promise<boolean>;
@@ -42,16 +43,14 @@ const useAuthStore = create<AuthState>()(
         set({ isLoading: true, error: null });
         try {
           const response = await api.post("/auth/login", { email, password });
-          const { token, ...userData } = response.data;
+          const userData = response.data;
 
           set({
             user: userData,
-            token: token,
             isAuthenticated: true,
             isLoading: false,
           });
 
-          api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
           return true;
         } catch (error: any) {
           set({
@@ -70,16 +69,14 @@ const useAuthStore = create<AuthState>()(
             email,
             password,
           });
-          const { token, ...userData } = response.data;
+          const userData = response.data;
 
           set({
             user: userData,
-            token: token,
             isAuthenticated: true,
             isLoading: false,
           });
 
-          api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
           return true;
         } catch (error: any) {
           set({
@@ -90,18 +87,42 @@ const useAuthStore = create<AuthState>()(
         }
       },
 
+      adminRegister: async (name, email, password, secret) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await api.post("/auth/admin/register", {
+            name,
+            email,
+            password,
+            secret
+          });
+          const userData = response.data;
+
+          set({
+            user: userData,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+
+          return true;
+        } catch (error: any) {
+          set({
+            error: error.response?.data?.message || "Admin registration failed",
+            isLoading: false,
+          });
+          return false;
+        }
+      },
+
       logout: () => {
         set({ user: null, token: null, isAuthenticated: false });
-        delete api.defaults.headers.common["Authorization"];
+        // The cookie will be cleared by the browser if the backend handles it or it expires
+        // Or we can add an api call to logout to clear the cookie
+        api.post("/auth/logout").catch(() => {}); // Optional: backend logout to clear cookie
       },
 
       initializeAuth: () => {
-        const stored = localStorage.getItem("auth-storage");
-        const state = stored ? JSON.parse(stored)?.state : null;
-        if (state?.token) {
-          api.defaults.headers.common["Authorization"] =
-            `Bearer ${state.token}`;
-        }
+        // withCredentials handles the cookie automatically
       },
 
       updateProfile: async (data) => {

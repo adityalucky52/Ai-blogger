@@ -1,45 +1,58 @@
 import jwt from "jsonwebtoken";
-import User, { IUser } from "../models/User.js";
+import { prisma } from "../database/prisma.js";
 import { Request, Response, NextFunction } from "express";
 
-interface AuthRequest extends Request {
-  user?: IUser | null;
+export interface AuthRequest extends Request {
+  user?: any;
 }
 
 export const protect = async (req: AuthRequest, res: Response, next: NextFunction) => {
   let token: string | undefined;
 
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
+  if (req.cookies && req.cookies.token) {
     try {
-      token = req.headers.authorization.split(" ")[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as { id: string };
-      req.user = await User.findById(decoded.id).select("-password");
+      token = req.cookies.token as string;
+      const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as unknown as { id: string };
+      
+      // Look up Admin first
+      let authUser: any = await prisma.admin.findUnique({
+        where: { id: decoded.id },
+        select: { id: true, name: true, email: true, createdAt: true, updatedAt: true }
+      });
+      
+      if (authUser) {
+        authUser.role = "admin";
+      } else {
+        // Look up standard user
+        authUser = await prisma.user.findUnique({
+          where: { id: decoded.id },
+          select: { id: true, name: true, email: true, avatar: true, status: true, bio: true, createdAt: true, updatedAt: true }
+        });
+        if (authUser) authUser.role = "user";
+      }
+
+      req.user = authUser;
+
+      if (!req.user) {
+         return res.status(401).json({ message: "User no longer exists" });
+      }
+
       next();
     } catch (error) {
       console.error(error);
-      res.status(401).json({ message: "Not authorized, token failed" });
+      return res.status(401).json({ message: "Not authorized, token failed" });
     }
-  }
-
-  if (!token) {
-    res.status(401).json({ message: "Not authorized, no token" });
+  } else {
+    return res.status(401).json({ message: "Not authorized, no token" });
   }
 };
 
 export const admin = (req: AuthRequest, res: Response, next: NextFunction) => {
-  // Strict check: User must be admin AND their email must match the env variable
-  if (
-    req.user && 
-    req.user.role === "admin" && 
-    req.user.email === process.env.ADMIN_EMAIL
-  ) {
+  if (req.user && req.user.role === "admin") {
     next();
   } else {
     res.status(401).json({ 
-      message: "Not authorized as admin. Access restricted to system administrator." 
+      message: "Not authorized as admin. Access restricted to administrators only." 
     });
   }
 };

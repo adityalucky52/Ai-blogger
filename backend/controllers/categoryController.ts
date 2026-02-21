@@ -1,28 +1,26 @@
 import { Request, Response } from "express";
-import Category from "../models/Category.js";
-import Blog from "../models/Blog.js";
+import { prisma } from "../database/prisma.js";
 
 // @desc    Get all categories
 // @route   GET /api/categories
 // @access  Public
 export const getCategories = async (req: Request, res: Response) => {
   try {
-    const categories = await Category.find().sort({ createdAt: -1 });
+    const categories = await prisma.category.findMany({
+      orderBy: { createdAt: "desc" },
+    });
     
     // Aggregation to get blog counts for each category
     const categoriesWithCount = await Promise.all(
       categories.map(async (category) => {
-        // Assuming Blog.category stores the category slug or name. 
-        // Based on the frontend mock data, slug is used in URLs, but Blog model just says String.
-        // Let's assume it stores the slug for consistency.
-        const count = await Blog.countDocuments({ category: category.slug }); 
-        return { ...category.toObject(), blogs: count };
+        const count = await prisma.post.count({ where: { category: category.slug } }); 
+        return { ...category, blogs: count };
       })
     );
 
-    res.json(categoriesWithCount);
+    return res.json(categoriesWithCount);
   } catch (error: any) {
-    res.status(500).json({ message: error.message || "Server Error" });
+    return res.status(500).json({ message: error.message || "Server Error" });
   }
 };
 
@@ -39,15 +37,17 @@ export const createCategory = async (req: Request, res: Response) => {
 
     const slug = name.toLowerCase().replace(/\s+/g, "-");
 
-    const categoryExists = await Category.findOne({ slug });
+    const categoryExists = await prisma.category.findUnique({ where: { slug } });
     if (categoryExists) {
       return res.status(400).json({ message: "Category already exists" });
     }
 
-    const category = await Category.create({ name, slug, color });
-    res.status(201).json(category);
+    const category = await prisma.category.create({ 
+      data: { name, slug, color } 
+    });
+    return res.status(201).json(category);
   } catch (error: any) {
-    res.status(500).json({ message: error.message || "Server Error" });
+    return res.status(500).json({ message: error.message || "Server Error" });
   }
 };
 
@@ -57,25 +57,28 @@ export const createCategory = async (req: Request, res: Response) => {
 export const updateCategory = async (req: Request, res: Response) => {
   try {
     const { name, color } = req.body;
-    const { id } = req.params;
+    const id = req.params.id as string;
 
-    const category = await Category.findById(id);
-
-    if (!category) {
-      return res.status(404).json({ message: "Category not found" });
-    }
-
-    category.name = name || category.name;
-    category.color = color || category.color;
-    
+    const data: any = {};
     if (name) {
-       category.slug = name.toLowerCase().replace(/\s+/g, "-");
+      data.name = name;
+      data.slug = name.toLowerCase().replace(/\s+/g, "-");
+    }
+    if (color) {
+      data.color = color;
     }
 
-    const updatedCategory = await category.save();
-    res.json(updatedCategory);
+    const updatedCategory = await prisma.category.update({
+      where: { id },
+      data
+    });
+    
+    return res.json(updatedCategory);
   } catch (error: any) {
-    res.status(500).json({ message: error.message || "Server Error" });
+    if (error.code === 'P2025') {
+       return res.status(404).json({ message: "Category not found" });
+    }
+    return res.status(500).json({ message: error.message || "Server Error" });
   }
 };
 
@@ -84,16 +87,17 @@ export const updateCategory = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const deleteCategory = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
-    const category = await Category.findById(id);
+    const id = req.params.id as string;
+    
+    await prisma.category.delete({
+      where: { id }
+    });
 
-    if (!category) {
-      return res.status(404).json({ message: "Category not found" });
-    }
-
-    await category.deleteOne();
-    res.json({ message: "Category removed" });
+    return res.json({ message: "Category removed" });
   } catch (error: any) {
-    res.status(500).json({ message: error.message || "Server Error" });
+    if (error.code === 'P2025') {
+       return res.status(404).json({ message: "Category not found" });
+    }
+    return res.status(500).json({ message: error.message || "Server Error" });
   }
 };

@@ -25,19 +25,8 @@ import {
 } from "lucide-react";
 import api from "../../api/axios";
 
-interface AdminBlog {
-  _id: string;
-  title: string;
-  author: {
-    name: string;
-    email: string;
-  };
-  status: string;
-  category: string;
-  views: number;
-  createdAt: string;
-  slug: string;
-}
+import { useFetch } from "../../hooks/useFetch";
+import { Blog } from "../../types";
 
 // Strip HTML tags from text (e.g. titles saved with <p> tags from editor)
 const stripHtml = (html: string) => {
@@ -47,31 +36,14 @@ const stripHtml = (html: string) => {
 };
 
 export default function ManageBlogs() {
-  const [blogs, setBlogs] = useState<AdminBlog[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: blogs, setData: setBlogs, loading, refresh } = useFetch<Blog>("/admin/blogs");
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-
-  useEffect(() => {
-    fetchBlogs();
-  }, []);
-
-  const fetchBlogs = async () => {
-    try {
-      setLoading(true);
-      const { data } = await api.get("/admin/blogs");
-      setBlogs(data);
-    } catch (error) {
-      console.error("Failed to fetch blogs:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
       const { data } = await api.put(`/admin/blogs/${id}`, { status: newStatus });
-      setBlogs(blogs.map(blog => blog._id === id ? { ...blog, status: data.status } : blog));
+      setBlogs(prev => prev.map(blog => blog.id === id ? { ...blog, status: data.status } : blog));
     } catch (error) {
       console.error("Failed to update status:", error);
       alert("Failed to update blog status");
@@ -83,7 +55,7 @@ export default function ManageBlogs() {
     
     try {
       await api.delete(`/admin/blogs/${id}`);
-      setBlogs(blogs.filter(blog => blog._id !== id));
+      setBlogs(blogs.filter(blog => blog.id !== id));
     } catch (error) {
       console.error("Failed to delete blog:", error);
       alert("Failed to delete blog");
@@ -265,7 +237,7 @@ export default function ManageBlogs() {
                 ) : (
                 filteredBlogs.map((blog) => (
                   <tr
-                    key={blog._id}
+                    key={blog.id}
                     className="border-t hover:bg-muted/30 transition-colors"
                   >
                     <td className="p-4">
@@ -311,12 +283,12 @@ export default function ManageBlogs() {
                           </DropdownMenuItem>
                           
                           {blog.status === "published" ? (
-                            <DropdownMenuItem onClick={() => handleUpdateStatus(blog._id, "draft")}>
+                            <DropdownMenuItem onClick={() => handleUpdateStatus(blog.id, "draft")}>
                               <XCircle className="h-4 w-4 mr-2 text-amber-500" />
                               Unpublish (Draft)
                             </DropdownMenuItem>
                           ) : (
-                            <DropdownMenuItem onClick={() => handleUpdateStatus(blog._id, "published")}>
+                            <DropdownMenuItem onClick={() => handleUpdateStatus(blog.id, "published")}>
                               <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
                               Publish
                             </DropdownMenuItem>
@@ -327,7 +299,7 @@ export default function ManageBlogs() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem 
                             className="text-red-600 focus:text-red-600"
-                            onClick={() => handleDelete(blog._id)}
+                            onClick={() => handleDelete(blog.id)}
                           >
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete

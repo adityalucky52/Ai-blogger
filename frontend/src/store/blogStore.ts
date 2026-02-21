@@ -1,30 +1,6 @@
 import { create } from "zustand";
 import api from "../api/axios";
-
-export interface Blog {
-  _id: string;
-  title: string;
-  content: string;
-  slug: string;
-  image: string;
-  category: string;
-  topic?: string;
-  excerpt: string;
-  readTime: string;
-  likes: string[]; // Array of user IDs
-  status: "draft" | "published";
-  views: number;
-  featured: boolean;
-  author: {
-    _id: string;
-    name: string;
-    avatar: string;
-    bio?: string;
-  };
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-}
+import { Blog } from "../types";
 
 interface BlogState {
   blogs: Blog[];
@@ -127,7 +103,7 @@ const useBlogStore = create<BlogState>((set) => ({
     try {
       const response = await api.put(`/blogs/${id}`, blogData);
       set((state) => ({
-        blogs: state.blogs.map((b) => (b._id === id ? response.data : b)),
+        blogs: state.blogs.map((b) => (b.id === id ? response.data : b)),
         currentBlog: response.data,
         isLoading: false,
       }));
@@ -146,7 +122,7 @@ const useBlogStore = create<BlogState>((set) => ({
     try {
       await api.delete(`/blogs/${id}`);
       set((state) => ({
-        blogs: state.blogs.filter((b) => b._id !== id),
+        blogs: state.blogs.filter((b) => b.id !== id),
         isLoading: false,
       }));
     } catch (error: any) {

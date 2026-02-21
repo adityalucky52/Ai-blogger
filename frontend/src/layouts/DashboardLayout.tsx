@@ -5,7 +5,7 @@ import {
   useNavigate,
   Navigate,
 } from "react-router-dom";
-import { useAuth } from "../App";
+import { useAuth } from "../hooks/useAuth";
 import { User } from "../store/authStore";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -184,7 +184,7 @@ export default function DashboardLayout() {
   // For demo purposes, let's create a mock user if not logged in
   // In production, this would redirect to login
   const mockUser: User = user || {
-    _id: "demo-id",
+    id: "demo-id",
     name: "Demo User",
     email: "demo@blogai.com",
     role: "user",
@@ -204,7 +204,7 @@ export default function DashboardLayout() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background text-foreground">
       {/* Desktop Sidebar */}
       <aside className="hidden lg:flex w-64 border-r flex-col">
         <Sidebar />
@@ -311,7 +311,7 @@ export default function DashboardLayout() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-auto p-4 lg:p-6 bg-muted/20">
           <Outlet />
         </main>
       </div>

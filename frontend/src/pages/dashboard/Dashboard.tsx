@@ -22,6 +22,7 @@ import {
 import useBlogStore from "../../store/blogStore";
 import { useEffect } from "react";
 import { stripHtmlTags } from "../../utils/textUtils";
+import { useAuth } from "../../hooks/useAuth";
 
 interface QuickAction {
   title: string;
@@ -51,6 +52,7 @@ const quickActions: QuickAction[] = [
 
 export default function Dashboard() {
   const { myBlogs, fetchMyBlogs } = useBlogStore();
+  const { user } = useAuth();
 
   useEffect(() => {
     fetchMyBlogs();
@@ -106,7 +108,7 @@ export default function Dashboard() {
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground">
-            Welcome back! Here's an overview of your blog.
+            Welcome back, {user?.name}! Here's an overview of your blog.
           </p>
         </div>
         <Button
@@ -171,7 +173,7 @@ export default function Dashboard() {
             <div className="space-y-4">
               {recentBlogs.map((blog) => (
                 <div
-                  key={blog._id}
+                  key={blog.id}
                   className="flex items-center justify-between p-4 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
                 >
                   <div className="flex-1 min-w-0">
@@ -199,7 +201,7 @@ export default function Dashboard() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Heart className="h-3 w-3" />
-                        {blog.likes.length}
+                        {blog.likes?.length || 0}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -208,7 +210,7 @@ export default function Dashboard() {
                     </div>
                   </div>
                   <Button variant="ghost" size="sm" asChild>
-                    <Link to={`/dashboard/blogs/edit/${blog._id}`}>Edit</Link>
+                    <Link to={`/dashboard/blogs/edit/${blog.id}`}>Edit</Link>
                   </Button>
                 </div>
               ))}

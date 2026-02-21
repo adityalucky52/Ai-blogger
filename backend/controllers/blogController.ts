@@ -1,9 +1,8 @@
-import Blog from "../models/Blog.js";
 import { Request, Response } from "express";
-import { IUser } from "../models/User.js";
+import { prisma } from "../database/prisma.js";
 
 interface AuthRequest extends Request {
-  user?: IUser | null;
+  user?: any;
 }
 
 // @desc    Get all blogs
@@ -12,29 +11,38 @@ interface AuthRequest extends Request {
 export const getBlogs = async (req: Request, res: Response) => {
   try {
     const { topic, search, category } = req.query;
-    let query: any = {};
+    let where: any = {
+      status: 'published' // Default to only published posts
+    };
 
     if (topic && topic !== "All") {
-      query.topic = topic;
+      where.topic = topic as string;
     }
 
-    // Support legacy category logic or new logic
     if (category) {
-      query.category = { $regex: (category as string), $options: "i" };
+      where.category = {
+        contains: category as string,
+        mode: 'insensitive'
+      };
     }
 
     if (search) {
-      query.$or = [
-        { title: { $regex: (search as string), $options: "i" } },
-        { excerpt: { $regex: (search as string), $options: "i" } },
-        { content: { $regex: (search as string), $options: "i" } },
+      where.OR = [
+        { title: { contains: search as string, mode: 'insensitive' } },
+        { excerpt: { contains: search as string, mode: 'insensitive' } },
+        { content: { contains: search as string, mode: 'insensitive' } },
       ];
     }
 
-    const blogs = await Blog.find(query)
-      .populate("author", "name avatar")
-      .sort({ createdAt: -1 })
-      .lean();
+    const blogs = await prisma.post.findMany({
+      where,
+      include: {
+        author: {
+          select: { name: true, avatar: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
 
     res.json(blogs);
   } catch (error: any) {
@@ -47,10 +55,16 @@ export const getBlogs = async (req: Request, res: Response) => {
 // @access  Public
 export const getBlogBySlug = async (req: Request, res: Response) => {
   try {
-    const blog = await Blog.findOne({ slug: req.params.slug }).populate(
-      "author",
-      "name avatar",
-    );
+    const slug = req.params.slug as string;
+    const blog = await prisma.post.findUnique({
+      where: { slug },
+      include: {
+        author: {
+          select: { name: true, avatar: true }
+        }
+      }
+    });
+
     if (blog) {
       res.json(blog);
     } else {
@@ -66,7 +80,11 @@ export const getBlogBySlug = async (req: Request, res: Response) => {
 // @access  Private
 export const getBlogById = async (req: Request, res: Response) => {
   try {
-    const blog = await Blog.findById(req.params.id);
+    const id = req.params.id as string;
+    const blog = await prisma.post.findUnique({
+      where: { id }
+    });
+
     if (blog) {
       res.json(blog);
     } else {
@@ -82,9 +100,10 @@ export const getBlogById = async (req: Request, res: Response) => {
 // @access  Private
 export const createBlog = async (req: AuthRequest, res: Response) => {
   try {
-    if (!req.user) {
-        return res.status(401).json({ message: "Not authorized" });
+    if (!req.user || req.user.role === 'admin') {
+        return res.status(401).json({ message: "Only standard users can create blog posts" });
     }
+
     const { title, excerpt, content, image, category, topic, tags } = req.body;
 
     // Generate Slug from Title
@@ -95,21 +114,26 @@ export const createBlog = async (req: AuthRequest, res: Response) => {
       .replace(/[\s_-]+/g, "-")
       .replace(/^-+|-+$/g, "");
 
-    const blog = new Blog({
-      title,
-      slug,
-      excerpt,
-      content,
-      image,
-      category,
-      topic,
-      tags,
-      author: req.user._id,
+    const blog = await prisma.post.create({
+      data: {
+        title,
+        slug,
+        excerpt,
+        content,
+        image,
+        category,
+        topic: topic || null,
+        tags: tags || [],
+        authorId: req.user.id as string,
+        status: 'published' // Or set to 'pending' if you want review
+      }
     });
 
-    const createdBlog = await blog.save();
-    res.status(201).json(createdBlog);
+    res.status(201).json(blog);
   } catch (error: any) {
+    if (error.code === 'P2002') {
+       return res.status(400).json({ message: "A blog with this title/slug already exists" });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -122,12 +146,14 @@ export const updateBlog = async (req: AuthRequest, res: Response) => {
     if (!req.user) {
         return res.status(401).json({ message: "Not authorized" });
     }
-    const blog = await Blog.findById(req.params.id);
+
+    const id = req.params.id as string;
+    const blog = await prisma.post.findUnique({ where: { id } });
 
     if (blog) {
       // Check ownership
       if (
-        blog.author.toString() !== req.user._id.toString() &&
+        blog.authorId !== req.user.id &&
         req.user.role !== "admin"
       ) {
         return res
@@ -135,14 +161,19 @@ export const updateBlog = async (req: AuthRequest, res: Response) => {
           .json({ message: "Not authorized to update this blog" });
       }
 
-      blog.title = req.body.title || blog.title;
-      blog.excerpt = req.body.excerpt || blog.excerpt;
-      blog.content = req.body.content || blog.content;
-      blog.image = req.body.image || blog.image;
-      blog.category = req.body.category || blog.category;
-      blog.topic = req.body.topic || blog.topic;
+      const updatedBlog = await prisma.post.update({
+        where: { id },
+        data: {
+          title: req.body.title || undefined,
+          excerpt: req.body.excerpt || undefined,
+          content: req.body.content || undefined,
+          image: req.body.image || undefined,
+          category: req.body.category || undefined,
+          topic: req.body.topic || undefined,
+          tags: req.body.tags || undefined,
+        }
+      });
 
-      const updatedBlog = await blog.save();
       res.json(updatedBlog);
     } else {
       res.status(404).json({ message: "Blog not found" });
@@ -160,12 +191,14 @@ export const deleteBlog = async (req: AuthRequest, res: Response) => {
     if (!req.user) {
         return res.status(401).json({ message: "Not authorized" });
     }
-    const blog = await Blog.findById(req.params.id);
+
+    const id = req.params.id as string;
+    const blog = await prisma.post.findUnique({ where: { id } });
 
     if (blog) {
       // Check ownership
       if (
-        blog.author.toString() !== req.user._id.toString() &&
+        blog.authorId !== req.user.id &&
         req.user.role !== "admin"
       ) {
         return res
@@ -173,7 +206,7 @@ export const deleteBlog = async (req: AuthRequest, res: Response) => {
           .json({ message: "Not authorized to delete this blog" });
       }
 
-      await blog.deleteOne();
+      await prisma.post.delete({ where: { id } });
       res.json({ message: "Blog removed" });
     } else {
       res.status(404).json({ message: "Blog not found" });
@@ -188,12 +221,15 @@ export const deleteBlog = async (req: AuthRequest, res: Response) => {
 // @access  Private
 export const getMyBlogs = async (req: AuthRequest, res: Response) => {
   try {
-    if (!req.user) {
+    if (!req.user || req.user.role === 'admin') {
         return res.status(401).json({ message: "Not authorized" });
     }
-    const blogs = await Blog.find({ author: req.user._id }).sort({
-      createdAt: -1,
+
+    const blogs = await prisma.post.findMany({
+      where: { authorId: req.user.id },
+      orderBy: { createdAt: 'desc' }
     });
+
     res.json(blogs);
   } catch (error: any) {
     res.status(500).json({ message: error.message });

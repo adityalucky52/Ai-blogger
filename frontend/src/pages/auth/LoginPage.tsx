@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../../App";
+import { useAuth } from "../../hooks/useAuth";
 import useAuthStore from "../../store/authStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +12,6 @@ import { Feather, Mail, Lock, Eye, EyeOff, ArrowLeft, Sparkles, PenTool, BarChar
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isAdminMode, setIsAdminMode] = useState(false); // Toggle state
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const { login, error, isLoading, clearError } = useAuth();
@@ -20,7 +19,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     clearError();
-  }, [clearError, isAdminMode]); // Clear error when toggling
+  }, [clearError]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,21 +61,11 @@ export default function LoginPage() {
             {/* Header */}
             <div className="flex justify-between items-center mb-2">
                 <h1 className="text-3xl font-bold tracking-tight">
-                    {isAdminMode ? "Admin Portal" : "Welcome back"}
+                    Welcome back
                 </h1>
-                <div className="flex items-center space-x-2">
-                    <Label htmlFor="admin-mode" className="text-xs text-muted-foreground">Admin</Label>
-                    <Checkbox 
-                        id="admin-mode" 
-                        checked={isAdminMode}
-                        onCheckedChange={(c) => setIsAdminMode(!!c)}
-                    />
-                </div>
             </div>
             <p className="mt-2 text-muted-foreground">
-              {isAdminMode 
-                ? "Enter system credentials to access admin dashboard" 
-                : "Enter your credentials to access your account"}
+              Enter your credentials to access your account
             </p>
           </div>
 

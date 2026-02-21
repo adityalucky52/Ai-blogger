@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-import { register, login, getMe, updateProfile, updateAvatar } from "../controllers/authController.js";
+import { register, adminRegister, login, logout, getMe, updateProfile, updateAvatar } from "../controllers/authController.js";
 import { protect } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
@@ -20,7 +20,9 @@ const upload = multer({
 });
 
 router.post("/register", register);
+router.post("/admin/register", adminRegister);
 router.post("/login", login);
+router.post("/logout", logout);
 router.get("/me", protect, getMe);
 router.put("/profile", protect, updateProfile);
 router.put("/avatar", protect, upload.single("avatar"), updateAvatar);

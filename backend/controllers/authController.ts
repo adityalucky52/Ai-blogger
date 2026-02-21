@@ -1,17 +1,75 @@
-import User, { IUser } from "../models/User.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import { Request, Response } from "express";
 import cloudinary from "../utils/cloudinary.js";
+import { prisma } from "../database/prisma.js";
 
-interface AuthRequest extends Request {
-  user?: IUser | null;
+export interface AuthRequest extends Request {
+  user?: any;
 }
 
-const generateToken = (id: any) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET as string, {
+const generateToken = (id: string, role: string) => {
+  return jwt.sign({ id, role }, process.env.JWT_SECRET as string, {
     expiresIn: "30d",
   });
+};
+
+const sendTokenCookie = (res: Response, token: string) => {
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+  });
+};
+
+// @desc    Register a new admin
+// @route   POST /api/auth/admin/register
+// @access  Public (Hidden)
+export const adminRegister = async (req: Request, res: Response) => {
+  try {
+    const { name, email, password, secret } = req.body;
+
+    if (secret !== process.env.ADMIN_REGISTRATION_SECRET) {
+      return res.status(401).json({ message: "Invalid registration secret" });
+    }
+
+    const userExists = await prisma.user.findUnique({ where: { email } });
+    const adminExists = await prisma.admin.findUnique({ where: { email } });
+
+    if (userExists || adminExists) {
+      return res.status(400).json({ message: "Email already exists" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const admin = await prisma.admin.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+      },
+    });
+
+    if (admin) {
+      const token = generateToken(admin.id, "admin");
+      sendTokenCookie(res, token);
+
+      res.status(201).json({
+        id: admin.id,
+        name: admin.name,
+        email: admin.email,
+        role: "admin",
+        createdAt: admin.createdAt,
+        updatedAt: admin.updatedAt,
+      });
+    } else {
+      res.status(400).json({ message: "Invalid admin data" });
+    }
+  } catch (error: any) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 // @desc    Register a new user
@@ -21,29 +79,38 @@ export const register = async (req: Request, res: Response) => {
   try {
     const { name, email, password } = req.body;
 
-    const userExists = await User.findOne({ email });
+    const userExists = await prisma.user.findUnique({ where: { email } });
+    const adminExists = await prisma.admin.findUnique({ where: { email } });
 
-    if (userExists) {
-      return res.status(400).json({ message: "User already exists" });
+    if (userExists || adminExists) {
+      return res.status(400).json({ message: "Email already exists" });
     }
 
-    const user = await User.create({
-      name,
-      email,
-      password,
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hashedPassword,
+      },
     });
 
     if (user) {
+      const token = generateToken(user.id, "user");
+      sendTokenCookie(res, token);
+
       res.status(201).json({
-        _id: user._id,
+        id: user.id,
         name: user.name,
         email: user.email,
-        role: user.role,
+        role: "user",
         avatar: user.avatar,
+        status: user.status,
         bio: user.bio,
         createdAt: user.createdAt,
         updatedAt: user.updatedAt,
-        token: generateToken(user._id),
       });
     } else {
       res.status(400).json({ message: "Invalid user data" });
@@ -56,77 +123,74 @@ export const register = async (req: Request, res: Response) => {
 // @desc    Auth user & get token
 // @route   POST /api/auth/login
 // @access  Public
-// @desc    Auth user & get token
-// @route   POST /api/auth/login
-// @access  Public
 export const login = async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
+    console.log(`🔑 Login attempt for: ${email}`);
 
-    // Check for Fixed Admin Credentials
-    if (
-      process.env.ADMIN_EMAIL &&
-      process.env.ADMIN_PASSWORD &&
-      email === process.env.ADMIN_EMAIL &&
-      password === process.env.ADMIN_PASSWORD
-    ) {
-      // Find valid admin user or create if not exists (to ensure DB consistency for foreign keys)
-      let adminUser = await User.findOne({ email: process.env.ADMIN_EMAIL });
-
-      if (!adminUser) {
-        // Create the admin user on the fly if it doesn't exist
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD, salt);
-        
-        adminUser = await User.create({
-          name: "Admin",
-          email: process.env.ADMIN_EMAIL,
-          password: hashedPassword, // Store hashed version
-          role: "admin",
-          status: "active",
-          bio: "System Administrator"
-        });
-      } else {
-        // Ensure role is admin if it exists
-        if (adminUser.role !== 'admin') {
-            adminUser.role = 'admin';
-            await adminUser.save();
-        }
+    // 1. Try to find in Admin table first
+    const adminUser = await prisma.admin.findUnique({ where: { email } });
+    if (adminUser) {
+      console.log(`👤 Found admin record for ${email}. Comparing passwords...`);
+      const isMatch = await bcrypt.compare(password, adminUser.password);
+      if (isMatch) {
+          console.log(`✅ Admin password matched for ${email}`);
+          const token = generateToken(adminUser.id, "admin");
+          sendTokenCookie(res, token);
+          
+          return res.json({
+            id: adminUser.id,
+            name: adminUser.name,
+            email: adminUser.email,
+            role: "admin",
+            createdAt: adminUser.createdAt,
+            updatedAt: adminUser.updatedAt,
+          });
       }
-
-      return res.json({
-        _id: adminUser._id,
-        name: adminUser.name,
-        email: adminUser.email,
-        role: adminUser.role,
-        avatar: adminUser.avatar,
-        bio: adminUser.bio,
-        createdAt: adminUser.createdAt,
-        updatedAt: adminUser.updatedAt,
-        token: generateToken(adminUser._id),
-      });
+      console.log(`❌ Admin password mismatch for ${email}`);
     }
 
-    const user = await User.findOne({ email });
+    // 2. Try to find in User table
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (user) {
+      console.log(`👤 Found user record for ${email}. Comparing passwords...`);
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (isMatch) {
+          console.log(`✅ User password matched for ${email}`);
+          const token = generateToken(user.id, "user");
+          sendTokenCookie(res, token);
 
-    if (user && (await user.matchPassword(password))) {
-      res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        bio: user.bio,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        token: generateToken(user._id),
-      });
-    } else {
-      res.status(401).json({ message: "Invalid email or password" });
+          return res.json({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: "user",
+            avatar: user.avatar,
+            status: user.status,
+            bio: user.bio,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt,
+          });
+      }
+      console.log(`❌ User password mismatch for ${email}`);
     }
+
+    console.log(`🚫 No match found for ${email}`);
+    res.status(401).json({ message: "Invalid email or password" });
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
+};
+
+// @desc    Logout user / clear cookie
+// @route   POST /api/auth/logout
+// @access  Public
+export const logout = async (req: Request, res: Response) => {
+  res.cookie("token", "", {
+    httpOnly: true,
+    expires: new Date(0),
+  });
+  res.status(200).json({ message: "Logged out successfully" });
 };
 
 // @desc    Get user profile
@@ -137,21 +201,9 @@ export const getMe = async (req: AuthRequest, res: Response) => {
     if (!req.user) {
       return res.status(401).json({ message: "Not authorized" });
     }
-    const user = await User.findById(req.user._id);
-    if (user) {
-      res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        avatar: user.avatar,
-        bio: user.bio,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      });
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
+    
+    // req.user is already populated by protect middleware
+    res.json(req.user);
   } catch (error: any) {
     res.status(500).json({ message: error.message });
   }
@@ -166,24 +218,27 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: "Not authorized" });
     }
 
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (req.user.role === 'admin') {
+       return res.status(403).json({ message: "Admins cannot update profile via this route" });
     }
 
     const { name, bio } = req.body;
 
-    if (name) user.name = name;
-    if (bio !== undefined) user.bio = bio;
-
-    const updatedUser = await user.save();
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        name: name || undefined,
+        bio: bio !== undefined ? bio : undefined,
+      }
+    });
 
     res.json({
-      _id: updatedUser._id,
+      id: updatedUser.id,
       name: updatedUser.name,
       email: updatedUser.email,
-      role: updatedUser.role,
+      role: "user",
       avatar: updatedUser.avatar,
+      status: updatedUser.status,
       bio: updatedUser.bio,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,
@@ -202,26 +257,31 @@ export const updateAvatar = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ message: "Not authorized" });
     }
 
+    if (req.user.role === "admin") {
+      return res.status(403).json({ message: "Admins do not have an avatar profile" });
+    }
+
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
     }
 
-    const user = await User.findById(req.user._id);
+    // Get current user to check for old avatar
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // If user already has a Cloudinary avatar, delete the old one
+    // Delete old avatar from Cloudinary
     if (user.avatar && user.avatar.includes("cloudinary.com")) {
       const publicId = user.avatar.split("/").slice(-2).join("/").split(".")[0];
       try {
         await cloudinary.uploader.destroy(publicId);
       } catch (err) {
-        // Ignore delete errors — old image may have been removed already
+        // Ignore delete errors
       }
     }
 
-    // Upload new avatar to Cloudinary
+    // Upload new avatar
     const b64 = Buffer.from(req.file.buffer).toString("base64");
     const dataURI = "data:" + req.file.mimetype + ";base64," + b64;
 
@@ -234,15 +294,18 @@ export const updateAvatar = async (req: AuthRequest, res: Response) => {
       ],
     });
 
-    user.avatar = result.secure_url;
-    const updatedUser = await user.save();
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { avatar: result.secure_url }
+    });
 
     res.json({
-      _id: updatedUser._id,
+      id: updatedUser.id,
       name: updatedUser.name,
       email: updatedUser.email,
-      role: updatedUser.role,
+      role: "user",
       avatar: updatedUser.avatar,
+      status: updatedUser.status,
       bio: updatedUser.bio,
       createdAt: updatedUser.createdAt,
       updatedAt: updatedUser.updatedAt,

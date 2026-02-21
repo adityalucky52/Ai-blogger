@@ -28,17 +28,11 @@ import {
 } from "lucide-react";
 import api from "../../api/axios";
 
-interface Category {
-  _id: string;
-  name: string;
-  slug: string;
-  blogs: number;
-  color: string;
-}
+import { useFetch } from "../../hooks/useFetch";
+import { Category } from "../../types";
 
 export default function ManageCategories() {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { data: categories, setData: setCategories, loading: isLoading, refresh: fetchCategories } = useFetch<Category>("/categories");
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editCategory, setEditCategory] = useState<Category | null>(null);
   
@@ -47,21 +41,6 @@ export default function ManageCategories() {
     color: "#3B82F6",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  const fetchCategories = async () => {
-    try {
-      const response = await api.get("/categories");
-      setCategories(response.data);
-    } catch (error) {
-      console.error("Failed to fetch categories:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleAddCategory = async () => {
     if (!newCategory.name.trim()) return;
@@ -72,7 +51,7 @@ export default function ManageCategories() {
       // The API returns the created category without the 'blogs' virtual count property immediately populated from DB count (which is 0)
       // but we can manually set it to 0 for UI consistency
       const addedCategory = { ...response.data, blogs: 0 };
-      setCategories([addedCategory, ...categories]);
+      setCategories(prev => [addedCategory, ...prev]);
       setNewCategory({ name: "", color: "#3B82F6" });
       setShowAddDialog(false);
     } catch (error) {
@@ -88,14 +67,14 @@ export default function ManageCategories() {
     setIsSubmitting(true);
 
     try {
-      const response = await api.put(`/categories/${editCategory._id}`, {
+      const response = await api.put(`/categories/${editCategory.id}`, {
         name: editCategory.name,
         color: editCategory.color,
       });
       
       setCategories(
         categories.map((c) =>
-          c._id === editCategory._id ? { ...c, ...response.data } : c
+          c.id === editCategory.id ? { ...c, ...response.data } : c
         )
       );
       setEditCategory(null);
@@ -112,7 +91,7 @@ export default function ManageCategories() {
     
     try {
       await api.delete(`/categories/${id}`);
-      setCategories(categories.filter((c) => c._id !== id));
+      setCategories(categories.filter((c) => c.id !== id));
     } catch (error) {
       console.error("Failed to delete category:", error);
       alert("Failed to delete category.");
@@ -211,7 +190,7 @@ export default function ManageCategories() {
             ) : (
                 categories.map((category) => (
               <div
-                key={category._id}
+                key={category.id}
                 className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors"
               >
                 <GripVertical className="h-5 w-5 text-muted-foreground cursor-move" />
@@ -244,7 +223,7 @@ export default function ManageCategories() {
                       Edit
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => handleDeleteCategory(category._id)}
+                      onClick={() => handleDeleteCategory(category.id)}
                       className="text-red-600 focus:text-red-600"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />

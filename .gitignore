@@ -5,6 +5,7 @@ node_modules/
 # Production / Build
 dist/
 **/dist/
+backend/generated/
 dist-ssr/
 *.local
 
@@ -40,6 +41,7 @@ DEPLOYMENT_GUIDE_V2.md
 IMPLEMENTATION_PLAN.md
 TYPESCRIPT_MIGRATION_PLAN.md
 AWS_DEPLOYMENT_FIX.md
+backend/PRISMA_SETUP_GUIDE.md
 
 # Test Scripts
 test/

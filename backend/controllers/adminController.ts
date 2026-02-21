@@ -1,25 +1,33 @@
 import { Request, Response } from "express";
-import User from "../models/User.js";
-import Blog from "../models/Blog.js";
+import { prisma } from "../database/prisma.js";
 
 // @desc    Get all users
 // @route   GET /api/admin/users
 // @access  Private/Admin
 export const getUsers = async (req: Request, res: Response) => {
   try {
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const users = await User.find({ email: { $ne: adminEmail } }).sort({ createdAt: -1 });
+    const users = await prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      select: {
+          id: true,
+          name: true,
+          email: true,
+          avatar: true,
+          status: true,
+          bio: true,
+          createdAt: true,
+          updatedAt: true,
+          _count: {
+              select: { posts: true }
+          }
+      }
+    });
     
-    // Get blog count for each user
-    const usersWithStats = await Promise.all(
-      users.map(async (user) => {
-        const blogCount = await Blog.countDocuments({ author: user._id });
-        return {
-          ...user.toObject(),
-          blogs: blogCount
-        };
-      })
-    );
+    // Map to include blogs count clearly
+    const usersWithStats = users.map(user => ({
+        ...user,
+        blogs: user._count.posts
+    }));
 
     res.json(usersWithStats);
   } catch (error: any) {
@@ -27,31 +35,34 @@ export const getUsers = async (req: Request, res: Response) => {
   }
 };
 
-// @desc    Update user status (role changes are NOT allowed — admin is fixed via .env)
+// @desc    Update user status (role changes are NOT allowed — admin is fixed via tables)
 // @route   PUT /api/admin/users/:id
 // @access  Private/Admin
 export const updateUser = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById(req.params.id);
+    const id = req.params.id as string;
+    
+    const user = await prisma.user.findUnique({ where: { id } });
 
     if (user) {
-      // Role changes blocked — only .env controls admin
-      if (req.body.role) {
-          return res.status(403).json({ message: "Role changes are not allowed. Admin is controlled via server configuration." });
-      }
       if (req.body.status) {
-          user.status = req.body.status;
+        const updatedUser = await prisma.user.update({
+          where: { id },
+          data: { status: req.body.status },
+          include: {
+              _count: {
+                  select: { posts: true }
+              }
+          }
+        });
+
+        return res.json({
+            ...updatedUser,
+            blogs: updatedUser._count.posts
+        });
       }
-
-      const updatedUser = await user.save();
       
-      // Get updated stats
-      const blogCount = await Blog.countDocuments({ author: updatedUser._id });
-
-      res.json({
-          ...updatedUser.toObject(),
-          blogs: blogCount
-      });
+      res.status(400).json({ message: "No update data provided" });
     } else {
       res.status(404).json({ message: "User not found" });
     }
@@ -65,18 +76,16 @@ export const updateUser = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const deleteUser = async (req: Request, res: Response) => {
   try {
-    const user = await User.findById(req.params.id);
-
-    if (user) {
-      // Delete user's blogs
-      await Blog.deleteMany({ author: user._id });
-      
-      await user.deleteOne();
-      res.json({ message: "User removed" });
-    } else {
-      res.status(404).json({ message: "User not found" });
-    }
+    const id = req.params.id as string;
+    
+    // Prisma cascade deletes blogs if configured in schema, otherwise we do it manually
+    // Our schema has onDelete: Cascade for Post.author
+    await prisma.user.delete({ where: { id } });
+    res.json({ message: "User removed" });
   } catch (error: any) {
+    if (error.code === 'P2025') {
+        return res.status(404).json({ message: "User not found" });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -86,9 +95,14 @@ export const deleteUser = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const getAllBlogs = async (req: Request, res: Response) => {
   try {
-    const blogs = await Blog.find()
-      .populate("author", "name email") // Populate author name and email
-      .sort({ createdAt: -1 });
+    const blogs = await prisma.post.findMany({
+      include: {
+        author: {
+          select: { name: true, email: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
     
     res.json(blogs);
   } catch (error: any) {
@@ -101,19 +115,19 @@ export const getAllBlogs = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const updateBlogStatus = async (req: Request, res: Response) => {
   try {
-    const blog = await Blog.findById(req.params.id);
-
-    if (blog) {
-      if (req.body.status) {
-        blog.status = req.body.status;
-      }
-
-      const updatedBlog = await blog.save();
-      res.json(updatedBlog);
-    } else {
-      res.status(404).json({ message: "Blog not found" });
+    const id = req.params.id as string;
+    if (req.body.status) {
+      const updatedBlog = await prisma.post.update({
+        where: { id },
+        data: { status: req.body.status }
+      });
+      return res.json(updatedBlog);
     }
+    res.status(400).json({ message: "Status is required" });
   } catch (error: any) {
+    if (error.code === 'P2025') {
+        return res.status(404).json({ message: "Blog not found" });
+    }
     res.status(500).json({ message: error.message });
   }
 };
@@ -121,21 +135,15 @@ export const updateBlogStatus = async (req: Request, res: Response) => {
 // @desc    Delete blog (as admin)
 // @route   DELETE /api/admin/blogs/:id
 // @access  Private/Admin
-// Note: We can reuse the existing deleteBlog controller if it allows admins, 
-// but having it here separates admin logic if we want to bypass certain checks or log admin actions differently.
-// The existing deleteBlog logic checks for admin role, so technically we could reuse it, 
-// but let's add a specific one here for completeness with the admin route structure.
 export const deleteBlog = async (req: Request, res: Response) => {
     try {
-      const blog = await Blog.findById(req.params.id);
-  
-      if (blog) {
-        await blog.deleteOne();
-        res.json({ message: "Blog removed by admin" });
-      } else {
-        res.status(404).json({ message: "Blog not found" });
-      }
+      const id = req.params.id as string;
+      await prisma.post.delete({ where: { id } });
+      res.json({ message: "Blog removed by admin" });
     } catch (error: any) {
+      if (error.code === 'P2025') {
+          return res.status(404).json({ message: "Blog not found" });
+      }
       res.status(500).json({ message: error.message });
     }
   };
@@ -145,49 +153,63 @@ export const deleteBlog = async (req: Request, res: Response) => {
 // @access  Private/Admin
 export const getDashboardStats = async (req: Request, res: Response) => {
   try {
-    const adminEmail = process.env.ADMIN_EMAIL;
-    const adminFilter = { email: { $ne: adminEmail } };
-    
-    const totalUsers = await User.countDocuments(adminFilter);
-    const totalBlogs = await Blog.countDocuments();
+    const totalUsers = await prisma.user.count();
+    const totalBlogs = await prisma.post.count();
     
     // Calculate total views
-    const viewsResult = await Blog.aggregate([
-      { $group: { _id: null, totalViews: { $sum: "$views" } } }
-    ]);
-    const totalViews = viewsResult.length > 0 ? viewsResult[0].totalViews : 0;
+    const viewsResult = await prisma.post.aggregate({
+      _sum: { views: true }
+    });
+    const totalViews = viewsResult._sum.views || 0;
 
     // Changes this week
     const now = new Date();
-    const startOfWeek = new Date(now.setDate(now.getDate() - 7));
+    const startOfWeek = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
-    const newUsers = await User.countDocuments({ createdAt: { $gte: startOfWeek }, email: { $ne: adminEmail } });
-    const newBlogs = await Blog.countDocuments({ createdAt: { $gte: startOfWeek } });
+    const newUsers = await prisma.user.count({
+      where: { createdAt: { gte: startOfWeek } }
+    });
+    const newBlogs = await prisma.post.count({
+      where: { createdAt: { gte: startOfWeek } }
+    });
 
-    // Recent Users (exclude admin)
-    const recentUsersRaw = await User.find({ email: { $ne: adminEmail } })
-      .select("name email createdAt role")
-      .sort({ createdAt: -1 })
-      .limit(5);
+    // Recent Users
+    const recentUsersRaw = await prisma.user.findMany({
+      select: {
+          id: true,
+          name: true,
+          email: true,
+          createdAt: true,
+          _count: {
+              select: { posts: true }
+          }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5
+    });
     
-    // Fetch blog counts for these recent users
-    const recentUsers = await Promise.all(recentUsersRaw.map(async (user) => {
-        const blogCount = await Blog.countDocuments({ author: user._id });
-        return {
-            ...user.toObject(),
-            blogs: blogCount
-        };
+    const recentUsers = recentUsersRaw.map(user => ({
+        ...user,
+        role: 'user', // Assuming all users here are 'user' role for display, or fetch actual role if available
+        blogs: user._count.posts
     }));
 
     // Recent Blogs
-    const recentBlogs = await Blog.find()
-      .populate("author", "name")
-      .select("title author status views createdAt")
-      .sort({ createdAt: -1 })
-      .limit(5);
+    const recentBlogs = await prisma.post.findMany({
+      select: {
+          id: true,
+          title: true,
+          status: true,
+          views: true,
+          createdAt: true,
+          author: { select: { name: true } }
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5
+    });
     
-    // Pending blogs (assuming draft status implies pending review for this context, or just drafts)
-    const pendingBlogsCount = await Blog.countDocuments({ status: "draft" }); // Or 'pending' if that status exists
+    // Pending blogs (assuming 'pending' status for review)
+    const pendingBlogsCount = await prisma.post.count({ where: { status: "pending" } }); 
 
     res.json({
       stats: {

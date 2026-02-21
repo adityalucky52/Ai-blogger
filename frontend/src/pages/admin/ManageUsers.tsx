@@ -36,51 +36,26 @@ import {
 } from "lucide-react";
 import api from "../../api/axios";
 
-interface AdminUser {
-  _id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: string;
-  blogs: number;
-  createdAt: string;
-  avatar: string;
-}
+import { useFetch } from "../../hooks/useFetch";
+import { User } from "../../types";
 
 export default function ManageUsers() {
-  const [users, setUsers] = useState<AdminUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: users, setData: setUsers, loading, refresh } = useFetch<User>("/admin/users");
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [deleteDialog, setDeleteDialog] = useState<{
     open: boolean;
-    user: AdminUser | null;
+    user: User | null;
   }>({
     open: false,
     user: null,
   });
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const { data } = await api.get("/admin/users");
-      setUsers(data);
-    } catch (error) {
-      console.error("Failed to fetch users:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleUpdateUserStatus = async (userId: string, newStatus: string) => {
     try {
       const { data } = await api.put(`/admin/users/${userId}`, { status: newStatus });
-      setUsers(users.map(user => user._id === userId ? { ...user, status: data.status } : user));
+      setUsers(prev => prev.map(user => user.id === userId ? { ...user, status: data.status } : user));
     } catch (error) {
       console.error("Failed to update user status:", error);
       alert("Failed to update user status");
@@ -93,8 +68,8 @@ export default function ManageUsers() {
     if (!deleteDialog.user) return;
     
     try {
-      await api.delete(`/admin/users/${deleteDialog.user._id}`);
-      setUsers(users.filter(user => user._id !== deleteDialog.user!._id));
+      await api.delete(`/admin/users/${deleteDialog.user.id}`);
+      setUsers(users.filter(user => user.id !== deleteDialog.user!.id));
       setDeleteDialog({ open: false, user: null });
     } catch (error) {
       console.error("Failed to delete user:", error);
@@ -283,7 +258,7 @@ export default function ManageUsers() {
                 ) : (
                   filteredUsers.map((user) => (
                     <tr
-                      key={user._id}
+                      key={user.id}
                       className="border-t hover:bg-muted/30 transition-colors"
                     >
                       <td className="p-4">
@@ -345,12 +320,12 @@ export default function ManageUsers() {
                               Send Email
                             </DropdownMenuItem> */}
                             {user.status === "active" ? (
-                              <DropdownMenuItem onClick={() => handleUpdateUserStatus(user._id, "inactive")}>
+                              <DropdownMenuItem onClick={() => handleUpdateUserStatus(user.id, "inactive")}>
                                 <UserX className="h-4 w-4 mr-2" />
                                 Deactivate
                               </DropdownMenuItem>
                             ) : (
-                              <DropdownMenuItem onClick={() => handleUpdateUserStatus(user._id, "active")}>
+                              <DropdownMenuItem onClick={() => handleUpdateUserStatus(user.id, "active")}>
                                 <UserCheck className="h-4 w-4 mr-2" />
                                 Activate
                               </DropdownMenuItem>

@@ -1,6 +1,7 @@
 import { useParams, Link } from "react-router-dom";
 import { useEffect } from "react";
-import useBlogStore, { Blog } from "../../store/blogStore";
+import useBlogStore from "../../store/blogStore";
+import { Blog } from "../../types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -118,7 +119,7 @@ export default function BlogPage() {
               <div className="flex items-center gap-2">
                 <Button variant="ghost" size="sm" className="gap-2">
                   <Heart className="h-4 w-4" />
-                  {blogData.likes.length}
+                  {blogData.likes?.length || 0}
                 </Button>
               </div>
               <div className="flex items-center gap-1">
@@ -188,7 +189,7 @@ export default function BlogPage() {
             <div className="grid md:grid-cols-2 gap-6">
               {relatedBlogs.map((blog) => (
                 <Link
-                  key={blog._id}
+                  key={blog.id}
                   to={`/blog/${blog.slug}`}
                   className="group flex gap-4 p-4 rounded-xl bg-card border hover:shadow-lg transition-all"
                 >

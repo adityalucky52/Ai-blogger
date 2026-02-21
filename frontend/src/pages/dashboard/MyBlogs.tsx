@@ -174,13 +174,13 @@ export default function MyBlogs() {
         ) : (
           filteredBlogs.map((blog) => (
             <Card
-              key={blog._id}
+              key={blog.id}
               className="border-0 shadow-sm hover:shadow-md transition-shadow"
             >
               <CardContent className="p-0">
                 <div
                   className="flex flex-col md:flex-row cursor-pointer"
-                  onClick={() => navigate(`/dashboard/blogs/edit/${blog._id}`)}
+                  onClick={() => navigate(`/dashboard/blogs/edit/${blog.id}`)}
                 >
                   {/* Image */}
                   <div className="md:w-48 h-32 md:h-auto">
@@ -242,7 +242,7 @@ export default function MyBlogs() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem asChild>
                             <Link
-                              to={`/dashboard/blogs/edit/${blog._id}`}
+                              to={`/dashboard/blogs/edit/${blog.id}`}
                               className="flex items-center"
                             >
                               <Edit className="h-4 w-4 mr-2" />
@@ -270,7 +270,7 @@ export default function MyBlogs() {
                                   "Are you sure you want to delete this blog?",
                                 )
                               ) {
-                                deleteBlog(blog._id);
+                                deleteBlog(blog.id);
                               }
                             }}
                           >

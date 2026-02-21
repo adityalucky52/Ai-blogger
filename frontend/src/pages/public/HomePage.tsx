@@ -5,7 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { getAvatarUrl } from "@/lib/utils";
 import { Code2, ArrowRight, Clock, Cpu, Globe, Shield } from "lucide-react";
-import useBlogStore, { Blog } from "../../store/blogStore";
+import useBlogStore from "../../store/blogStore";
+import { Blog } from "../../types";
 import { useEffect } from "react";
 import { stripHtmlTags } from "../../utils/textUtils";
 
@@ -196,7 +197,7 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {latestBlogs.map((blog) => (
-              <BlogCard key={blog._id} blog={blog} />
+              <BlogCard key={blog.id} blog={blog} />
             ))}
           </div>
 

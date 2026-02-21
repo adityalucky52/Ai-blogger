@@ -68,7 +68,7 @@ export default function CategoryPage() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredBlogs.map((blog) => (
                 <Card
-                  key={blog._id}
+                  key={blog.id}
                   className="group overflow-hidden border hover:shadow-lg transition-all"
                 >
                   <div className="relative h-48 overflow-hidden">

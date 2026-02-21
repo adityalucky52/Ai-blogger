@@ -22,6 +22,7 @@ import {
 
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
+import { stripHtmlTags } from "../../utils/textUtils";
 
 interface Stat {
   title: string;
@@ -32,7 +33,7 @@ interface Stat {
 }
 
 interface RecentUser {
-  id: string; // Changed to string for _id
+  id: string; 
   name: string;
   email: string;
   blogs: number;
@@ -40,7 +41,7 @@ interface RecentUser {
 }
 
 interface RecentBlog {
-  id: string; // Changed to string for _id
+  id: string; 
   title: string;
   author: string;
   status: string;
@@ -51,13 +52,6 @@ interface Alert {
   type: string;
   message: string;
 }
-
-// Strip HTML tags from text
-const stripHtml = (html: string) => {
-  const tmp = document.createElement("div");
-  tmp.innerHTML = html;
-  return tmp.textContent || tmp.innerText || "";
-};
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<Stat[]>([]);
@@ -116,7 +110,7 @@ export default function AdminDashboard() {
         // Transform Recent Blogs
         const newRecentBlogs: RecentBlog[] = data.recentBlogs.map((blog: any) => ({
           id: blog._id,
-          title: stripHtml(blog.title),
+          title: stripHtmlTags(blog.title),
           author: blog.author ? blog.author.name : "Unknown",
           status: blog.status,
           views: blog.views,
