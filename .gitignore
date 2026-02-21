@@ -43,3 +43,4 @@ AWS_DEPLOYMENT_FIX.md
 
 # Test Scripts
 test/
+backend/load-test.yml
