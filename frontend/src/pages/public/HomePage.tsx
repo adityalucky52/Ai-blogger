@@ -102,7 +102,7 @@ export default function HomePage() {
               <Button
                 size="lg"
                 variant="outline"
-                className="border-white/30 text-white hover:bg-white/10 font-semibold px-8"
+                className="bg-transparent border-background/30 text-background hover:bg-background/10 font-semibold px-8"
                 asChild
               >
                 <Link to="/register">Start Writing</Link>
